@@ -1,0 +1,13 @@
+# Logs directory — created by Winston at runtime
+logs/
+
+# Node modules
+node_modules/
+dist/
+
+# Environment files — NEVER commit
+.env
+
+# OS files
+.DS_Store
+Thumbs.db

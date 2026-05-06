@@ -1,0 +1,290 @@
+<div class="command-center">
+
+  <!-- ══════════════════════════════════════════════════════════
+       TOP NAV BAR
+  ══════════════════════════════════════════════════════════ -->
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="topbar__logo">⚡</span>
+      <div>
+        <h1 class="topbar__title">AI-Pulse</h1>
+        <p class="topbar__sub">Admin Command Center</p>
+      </div>
+    </div>
+
+    <div class="topbar__actions">
+      <div class="topbar__status-dot" [class.pulse]="!(isLoading$ | async)"></div>
+      <span class="topbar__status-text">
+        {{ (isLoading$ | async) ? 'Fetching...' : 'Live' }}
+      </span>
+      <button mat-icon-button class="topbar__refresh-btn" (click)="onRefresh()" matTooltip="Refresh Signals">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════════
+       STATS CARDS ROW
+  ══════════════════════════════════════════════════════════ -->
+  <section class="stats-row">
+
+    <div class="stat-card stat-card--blue">
+      <div class="stat-card__icon">
+        <mat-icon>trending_up</mat-icon>
+      </div>
+      <div class="stat-card__body">
+        <p class="stat-card__label">Total Signals</p>
+        <p class="stat-card__value">{{ stats.total }}</p>
+      </div>
+    </div>
+
+    <div class="stat-card stat-card--gold">
+      <div class="stat-card__icon">
+        <mat-icon>warning_amber</mat-icon>
+      </div>
+      <div class="stat-card__body">
+        <p class="stat-card__label">🔴 Alerts (Low Stock + Trending)</p>
+        <p class="stat-card__value">{{ stats.alerts }}</p>
+      </div>
+    </div>
+
+    <div class="stat-card stat-card--green">
+      <div class="stat-card__icon">
+        <mat-icon>inventory_2</mat-icon>
+      </div>
+      <div class="stat-card__body">
+        <p class="stat-card__label">Adequate Stock</p>
+        <p class="stat-card__value">{{ stats.adequate }}</p>
+      </div>
+    </div>
+
+    <div class="stat-card stat-card--purple">
+      <div class="stat-card__icon">
+        <mat-icon>insights</mat-icon>
+      </div>
+      <div class="stat-card__body">
+        <p class="stat-card__label">Avg Trend Score</p>
+        <p class="stat-card__value">{{ stats.avgTrendScore }}%</p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       AI ANALYSIS PANEL
+  ══════════════════════════════════════════════════════════ -->
+  <section class="analysis-panel">
+    <div class="analysis-panel__header">
+      <mat-icon class="text-gold">psychology</mat-icon>
+      <h2 class="analysis-panel__title">AI Trend Analysis</h2>
+    </div>
+
+    <div class="analysis-panel__form">
+      <mat-form-field appearance="outline" class="keyword-field">
+        <mat-label>Enter trend keyword</mat-label>
+        <mat-icon matPrefix class="field-prefix-icon">search</mat-icon>
+        <input matInput
+               [formControl]="keywordControl"
+               placeholder="e.g. Winter coming, Diwali sale, IPL season…"
+               (keydown.enter)="onAnalyze()" />
+        <mat-error *ngIf="keywordControl.hasError('required')">Keyword is required</mat-error>
+        <mat-error *ngIf="keywordControl.hasError('minlength')">Minimum 2 characters</mat-error>
+      </mat-form-field>
+
+      <button
+        mat-flat-button
+        class="analyze-btn"
+        (click)="onAnalyze()"
+        [disabled]="isLoading$ | async">
+        <mat-icon>auto_awesome</mat-icon>
+        {{ (isLoading$ | async) ? 'Analyzing…' : 'Analyze with AI' }}
+      </button>
+    </div>
+
+    <!-- Last report summary chips -->
+    <div class="analysis-panel__report" *ngIf="lastReport">
+      <span class="report-label">Last run: <strong class="text-gold">{{ lastReport.keyword }}</strong></span>
+      <mat-chip-set>
+        <mat-chip class="chip chip--blue">📊 {{ lastReport.summary.totalTrending }} Products</mat-chip>
+        <mat-chip class="chip chip--gold">⚠️ {{ lastReport.summary.lowStockAlerts }} Alerts</mat-chip>
+        <mat-chip class="chip chip--green">✅ {{ lastReport.summary.signalsWritten }} Written</mat-chip>
+        <mat-chip class="chip chip--gray">🔍 {{ lastReport.summary.notInCatalog }} Not in Catalog</mat-chip>
+      </mat-chip-set>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       MAIN CONTENT GRID (Table + Chart)
+  ══════════════════════════════════════════════════════════ -->
+  <div class="content-grid">
+
+    <!-- ── LEFT: Trend Signals Table ─────────────────────────── -->
+    <section class="panel table-panel">
+
+      <div class="panel__header">
+        <div class="panel__title-row">
+          <mat-icon class="text-blue">table_chart</mat-icon>
+          <h2 class="panel__title">Live Trend Signals</h2>
+        </div>
+
+        <!-- Table search filter -->
+        <mat-form-field appearance="outline" class="table-filter">
+          <mat-icon matPrefix>filter_list</mat-icon>
+          <input matInput [formControl]="filterControl" placeholder="Filter table…" />
+        </mat-form-field>
+      </div>
+
+      <!-- Loading overlay -->
+      <div class="loading-overlay" *ngIf="isLoading$ | async">
+        <mat-progress-spinner mode="indeterminate" diameter="40"></mat-progress-spinner>
+        <p>Fetching signals…</p>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" *ngIf="!(isLoading$ | async) && dataSource.data.length === 0">
+        <mat-icon>signal_cellular_nodata</mat-icon>
+        <p>No trend signals yet.</p>
+        <p class="text-muted">Use the AI Trend Analysis panel above to generate signals.</p>
+      </div>
+
+      <!-- Material Table -->
+      <div class="table-wrapper" [class.hidden]="(isLoading$ | async) || dataSource.data.length === 0">
+        <table mat-table [dataSource]="dataSource" matSort class="trend-table">
+
+          <!-- Status Column (alert badge) -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+            <td mat-cell *matCellDef="let row">
+              <span class="badge" [class.badge--alert]="row.isAlert" [class.badge--ok]="!row.isAlert">
+                <mat-icon>{{ row.isAlert ? 'warning' : 'check_circle' }}</mat-icon>
+                {{ row.isAlert ? 'Alert' : 'OK' }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- SKU -->
+          <ng-container matColumnDef="sku">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>SKU</th>
+            <td mat-cell *matCellDef="let row">
+              <code class="sku-code">{{ row.sku }}</code>
+            </td>
+          </ng-container>
+
+          <!-- Product Name -->
+          <ng-container matColumnDef="productName">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Product</th>
+            <td mat-cell *matCellDef="let row">
+              <span class="product-name">{{ row.productName }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Category -->
+          <ng-container matColumnDef="category">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Category</th>
+            <td mat-cell *matCellDef="let row">
+              <span class="category-chip">{{ row.category }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Trend Score (progress bar) -->
+          <ng-container matColumnDef="trendScore">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Trend Score</th>
+            <td mat-cell *matCellDef="let row">
+              <div class="score-cell">
+                <div class="score-bar-track">
+                  <div class="score-bar-fill"
+                       [style.width.%]="row.trendScore"
+                       [class.score-bar-fill--high]="row.trendScore > 70"
+                       [class.score-bar-fill--mid]="row.trendScore > 40 && row.trendScore <= 70"
+                       [class.score-bar-fill--low]="row.trendScore <= 40">
+                  </div>
+                </div>
+                <span class="score-label" [class.text-gold]="row.trendScore > 70">
+                  {{ formatScore(row.trendScore) }}
+                </span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Current Stock -->
+          <ng-container matColumnDef="currentStock">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Stock</th>
+            <td mat-cell *matCellDef="let row">
+              <span [class.text-red]="row.currentStock < 50" [class.text-green]="row.currentStock >= 50">
+                {{ row.currentStock }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Predicted Demand -->
+          <ng-container matColumnDef="predictedDemand">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Predicted Demand</th>
+            <td mat-cell *matCellDef="let row">
+              <span class="text-blue">{{ row.predictedDemand }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Signal Type -->
+          <ng-container matColumnDef="signalType">
+            <th mat-header-cell *matHeaderCellDef>Signal Type</th>
+            <td mat-cell *matCellDef="let row">
+              <span class="signal-type">{{ formatSignalType(row.signalType) }}</span>
+            </td>
+          </ng-container>
+
+          <!-- AI Reason -->
+          <ng-container matColumnDef="reason">
+            <th mat-header-cell *matHeaderCellDef>AI Reason</th>
+            <td mat-cell *matCellDef="let row">
+              <span class="reason-text" [matTooltip]="row.reason">
+                {{ row.reason | slice:0:60 }}{{ row.reason.length > 60 ? '…' : '' }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Row definitions -->
+          <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+              [ngClass]="getRowClass(row)"
+              [class.alert-row]="row.isAlert">
+          </tr>
+
+          <!-- No data row -->
+          <tr class="mat-row no-data-row" *matNoDataRow>
+            <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+              No results match "{{ filterControl.value }}"
+            </td>
+          </tr>
+
+        </table>
+      </div>
+
+    </section>
+
+    <!-- ── RIGHT: Bar Chart ───────────────────────────────────── -->
+    <section class="panel chart-panel">
+      <div class="panel__header">
+        <div class="panel__title-row">
+          <mat-icon class="text-gold">bar_chart</mat-icon>
+          <h2 class="panel__title">Top 5 — Stock vs Predicted Demand</h2>
+        </div>
+      </div>
+
+      <div class="chart-legend-note">
+        <span class="legend-dot legend-dot--blue"></span><span>Current Stock</span>
+        <span class="legend-dot legend-dot--gold"></span><span>Predicted Demand</span>
+      </div>
+
+      <div class="chart-container">
+        <canvas #barChartCanvas></canvas>
+      </div>
+
+      <div class="chart-empty" *ngIf="dataSource.data.length === 0">
+        <mat-icon>insert_chart_outlined</mat-icon>
+        <p>Chart populates after signals are loaded.</p>
+      </div>
+    </section>
+
+  </div>
+
+</div>
