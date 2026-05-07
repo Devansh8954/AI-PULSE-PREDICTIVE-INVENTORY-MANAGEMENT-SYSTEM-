@@ -1,5 +1,5 @@
 // ============================================================
-// Sidebar Component — Dark Theme Navigation
+// Sidebar Component — Dark Theme Navigation (Fully Responsive)
 // ============================================================
 
 :host {
@@ -23,6 +23,25 @@
   z-index: 200;
   flex-shrink: 0;
 
+  // Auto-collapse at tablet breakpoint
+  @media (max-width: 1024px) {
+    width: 64px;
+
+    .sidebar__item-content,
+    .sidebar__brand-text,
+    .sidebar__section-label,
+    .sidebar__footer { display: none !important; }
+
+    .sidebar__item  { justify-content: center; padding: 0 12px; }
+    .sidebar__brand { justify-content: center; padding: 16px 0; }
+    .sidebar__toggle { position: static; margin: 0; }
+  }
+
+  // Hidden entirely on very small screens — use bottom bar instead
+  @media (max-width: 600px) {
+    display: none;
+  }
+
   &--collapsed {
     width: 64px;
 
@@ -31,7 +50,7 @@
     .sidebar__section-label,
     .sidebar__footer { display: none; }
 
-    .sidebar__item { justify-content: center; padding: 0 12px; }
+    .sidebar__item  { justify-content: center; padding: 0 12px; }
     .sidebar__brand { justify-content: center; padding: 20px 0; }
     .sidebar__toggle { position: static; margin: 0 auto; }
   }
@@ -45,6 +64,7 @@
   padding: 20px 18px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   position: relative;
+  min-height: 72px;
 }
 
 .sidebar__logo {
@@ -59,6 +79,8 @@
   flex-direction: column;
   line-height: 1.2;
   overflow: hidden;
+  flex: 1;
+  min-width: 0;
 }
 
 .sidebar__brand-name {
@@ -69,6 +91,8 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar__brand-tag {
@@ -80,7 +104,6 @@
 }
 
 .sidebar__toggle {
-  margin-left: auto;
   flex-shrink: 0;
   width: 28px;
   height: 28px;
@@ -100,6 +123,9 @@
     background: rgba(88, 166, 255, 0.12);
     color: #58a6ff;
   }
+
+  // Hide toggle button on tablets (auto-collapse handles it)
+  @media (max-width: 1024px) { display: none; }
 }
 
 /* ── Section Label ────────────────────────────────────────── */
@@ -110,6 +136,7 @@
   text-transform: uppercase;
   color: #8b949e;
   padding: 16px 18px 6px;
+  white-space: nowrap;
 }
 
 /* ── Nav ──────────────────────────────────────────────────── */
@@ -121,6 +148,8 @@
   flex-direction: column;
   gap: 2px;
   flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .sidebar__item {
@@ -133,24 +162,23 @@
   transition: background 0.18s, transform 0.15s;
   position: relative;
   overflow: hidden;
+  white-space: nowrap;
 
   &:hover {
     background: rgba(255, 255, 255, 0.06);
     transform: translateX(2px);
   }
 
-  // Color variants — idle state
-  &--gold .sidebar__item-icon { color: #f0b429; }
-  &--blue .sidebar__item-icon { color: #58a6ff; }
+  &--gold .sidebar__item-icon   { color: #f0b429; }
+  &--blue .sidebar__item-icon   { color: #58a6ff; }
   &--purple .sidebar__item-icon { color: #a371f7; }
-  &--green .sidebar__item-icon { color: #3fb950; }
+  &--green .sidebar__item-icon  { color: #3fb950; }
 
-  // Active state
   &--active {
-    &.sidebar__item--gold  { background: rgba(240, 180, 41, 0.12);  border: 1px solid rgba(240, 180, 41, 0.2); }
-    &.sidebar__item--blue  { background: rgba(88, 166, 255, 0.12);  border: 1px solid rgba(88, 166, 255, 0.2); }
-    &.sidebar__item--purple{ background: rgba(163, 113, 247, 0.12); border: 1px solid rgba(163, 113, 247, 0.2); }
-    &.sidebar__item--green { background: rgba(63, 185, 80, 0.12);   border: 1px solid rgba(63, 185, 80, 0.2); }
+    &.sidebar__item--gold   { background: rgba(240,180,41,0.12);   border: 1px solid rgba(240,180,41,0.2);  }
+    &.sidebar__item--blue   { background: rgba(88,166,255,0.12);   border: 1px solid rgba(88,166,255,0.2);  }
+    &.sidebar__item--purple { background: rgba(163,113,247,0.12);  border: 1px solid rgba(163,113,247,0.2); }
+    &.sidebar__item--green  { background: rgba(63,185,80,0.12);    border: 1px solid rgba(63,185,80,0.2);   }
   }
 }
 
@@ -172,6 +200,7 @@
   gap: 2px;
   overflow: hidden;
   flex: 1;
+  min-width: 0;
 }
 
 .sidebar__item-label {
@@ -224,15 +253,21 @@
   border-radius: 50%;
   background: #3fb950;
   box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.6);
+  flex-shrink: 0;
 
-  &.pulse {
-    animation: status-pulse 2s infinite;
-  }
+  &.pulse { animation: status-pulse 2s infinite; }
 }
 
 .sidebar__footer-text {
   font-size: 11px;
   color: #8b949e;
+  white-space: nowrap;
+}
+
+/* ── Mobile Bottom Navigation Bar ────────────────────────── */
+// Injected via app-shell on mobile
+@media (max-width: 600px) {
+  :host { display: none; }
 }
 
 /* ── Animations ───────────────────────────────────────────── */

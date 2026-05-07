@@ -1,10 +1,24 @@
-<div class="app-shell" [class.app-shell--collapsed]="sidebarCollapsed">
+<div class="app-shell">
+  <!-- Sidebar (hidden on mobile, icon-only on tablet) -->
   <app-sidebar
     [collapsed]="sidebarCollapsed"
     (toggleCollapse)="toggleSidebar()">
   </app-sidebar>
 
+  <!-- Main scrollable content -->
   <main class="app-shell__content">
     <router-outlet></router-outlet>
   </main>
+
+  <!-- Mobile bottom nav bar (visible only on ≤600px) -->
+  <nav class="mobile-nav">
+    <a class="mobile-nav__item"
+       *ngFor="let item of mobileNavItems"
+       [class.mobile-nav__item--active]="isActive(item.route)"
+       [class]="'mobile-nav__item mobile-nav__item--' + item.color + (isActive(item.route) ? ' mobile-nav__item--active' : '')"
+       (click)="navigate(item.route)">
+      <mat-icon>{{ item.icon }}</mat-icon>
+      <span>{{ item.shortLabel }}</span>
+    </a>
+  </nav>
 </div>

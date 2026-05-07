@@ -5,8 +5,9 @@
   ══════════════════════════════════════════════════════════ -->
   <header class="topbar">
     <div class="topbar__brand">
-      <span class="topbar__logo">⚡</span>
-      <div>
+      <!-- Logo emoji — not a mat-icon, safe from gradient leak -->
+      <span class="topbar__logo" aria-hidden="true">⚡</span>
+      <div class="topbar__brand-text">
         <h1 class="topbar__title">AI-Pulse</h1>
         <p class="topbar__sub">Admin Command Center</p>
       </div>

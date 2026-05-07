@@ -127,7 +127,7 @@ Specifically, the system must solve for:
 ## 📁 Project Structure
 
 ```
-project-amazon/              ← Root
+AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-/              ← Root
 ├── backend/                 ← Node.js Express API
 ├── frontend/                ← Angular 17 SPA (scaffold via ng new)
 ├── database/                ← SQL schema & seed files

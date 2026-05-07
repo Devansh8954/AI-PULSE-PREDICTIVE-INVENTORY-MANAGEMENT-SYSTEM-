@@ -11,15 +11,21 @@
   .stat-card__value { color: #a371f7; }
 }
 
+/* ── Charts Row — side by side → stacked ─────────────────── */
 .charts-row {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 300px;
   gap: 20px;
   padding: 0 32px;
-  @media (max-width: 1100px) { grid-template-columns: 1fr; }
+
+  @media (max-width: 1200px) { grid-template-columns: 1fr 280px; }
+  @media (max-width: 1024px) { grid-template-columns: 1fr; }
+  @media (max-width: 768px)  { padding: 0 20px; gap: 16px; }
+  @media (max-width: 480px)  { padding: 0 16px; gap: 12px; }
 }
 
-.chart-panel-lg, .chart-panel-sm {
+.chart-panel-lg,
+.chart-panel-sm {
   display: flex;
   flex-direction: column;
 }
@@ -28,9 +34,14 @@
   position: relative;
   height: 280px;
   padding: 16px 20px 20px;
+
   canvas { width: 100% !important; height: 100% !important; }
+
+  @media (max-width: 768px) { height: 240px; padding: 12px 16px 16px; }
+  @media (max-width: 480px) { height: 200px; padding: 10px 12px 14px; }
 }
 
+/* ── Confidence bar ───────────────────────────────────────── */
 .conf-cell {
   display: flex;
   align-items: center;
@@ -60,11 +71,9 @@
   min-width: 32px;
 }
 
+/* ── Trend icon ───────────────────────────────────────────── */
 .trend-icon {
   display: inline-flex;
   align-items: center;
   mat-icon { font-size: 20px; width: 20px; height: 20px; }
 }
-
-.text-purple { color: #a371f7 !important; }
-.text-red    { color: #f85149 !important; }

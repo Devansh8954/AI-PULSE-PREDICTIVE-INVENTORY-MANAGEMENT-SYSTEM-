@@ -79,6 +79,33 @@ html, body {
 ::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
+/* ── Material Icons Global Fix ───────────────────────────────── */
+/* Ensure mat-icon always renders as a glyph, not letters */
+.mat-icon,
+mat-icon {
+  font-family: 'Material Icons', 'Material Icons Round', 'Material Icons Outlined' !important;
+  font-weight: normal !important;
+  font-style: normal !important;
+  font-size: 24px;
+  line-height: 1 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap !important;
+  word-wrap: normal !important;
+  direction: ltr !important;
+  -webkit-font-feature-settings: 'liga' !important;
+  font-feature-settings: 'liga' !important;
+  -webkit-font-smoothing: antialiased !important;
+  /* Critical: undo gradient text-fill that breaks icon rendering */
+  -webkit-text-fill-color: currentColor !important;
+  background: none !important;
+  background-clip: unset !important;
+  -webkit-background-clip: unset !important;
+}
+
 /* ── Angular Material Dark Overrides ─────────────────────────── */
 .mat-mdc-table {
   background: transparent !important;
