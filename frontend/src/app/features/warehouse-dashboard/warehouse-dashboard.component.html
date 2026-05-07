@@ -1,0 +1,165 @@
+<div class="page">
+
+  <!-- Top Bar -->
+  <header class="page-topbar page-topbar--green">
+    <div class="page-topbar__left">
+      <mat-icon>warehouse</mat-icon>
+      <div>
+        <h1 class="page-topbar__title">Warehouse Ops</h1>
+        <p class="page-topbar__sub">Bin Locations, Restocking &amp; Audit Trail</p>
+      </div>
+    </div>
+    <div class="page-topbar__right">
+      <span class="role-badge role-badge--green">WAREHOUSE</span>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <section class="stats-row">
+    <div class="stat-card stat-card--blue">
+      <div class="stat-card__icon"><mat-icon>place</mat-icon></div>
+      <div class="stat-card__body">
+        <p class="stat-card__label">Total Locations</p>
+        <p class="stat-card__value">{{ stats.totalLocations }}</p>
+      </div>
+    </div>
+    <div class="stat-card stat-card--purple">
+      <div class="stat-card__icon"><mat-icon>grid_view</mat-icon></div>
+      <div class="stat-card__body">
+        <p class="stat-card__label">Active Zones</p>
+        <p class="stat-card__value">{{ stats.activeZones }}</p>
+      </div>
+    </div>
+    <div class="stat-card stat-card--green">
+      <div class="stat-card__icon"><mat-icon>move_to_inbox</mat-icon></div>
+      <div class="stat-card__body">
+        <p class="stat-card__label">Today's Restocks</p>
+        <p class="stat-card__value">{{ stats.todayRestocks }}</p>
+      </div>
+    </div>
+    <div class="stat-card stat-card--gold">
+      <div class="stat-card__icon"><mat-icon>history</mat-icon></div>
+      <div class="stat-card__body">
+        <p class="stat-card__label">Audit Entries</p>
+        <p class="stat-card__value">{{ stats.auditEntries }}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bin Inventory Table -->
+  <section class="panel mx-page">
+    <div class="panel__header">
+      <div class="panel__title-row">
+        <mat-icon class="text-green">shelves</mat-icon>
+        <h2 class="panel__title">Bin Inventory — Location View</h2>
+      </div>
+      <span class="count-badge">{{ warehouseItems.length }} bins</span>
+    </div>
+    <div class="table-wrapper">
+      <table mat-table [dataSource]="warehouseItems" class="data-table">
+        <ng-container matColumnDef="sku">
+          <th mat-header-cell *matHeaderCellDef>SKU</th>
+          <td mat-cell *matCellDef="let row"><code class="sku-code">{{ row.sku }}</code></td>
+        </ng-container>
+        <ng-container matColumnDef="productName">
+          <th mat-header-cell *matHeaderCellDef>Product</th>
+          <td mat-cell *matCellDef="let row"><span class="fw-medium">{{ row.productName }}</span></td>
+        </ng-container>
+        <ng-container matColumnDef="location">
+          <th mat-header-cell *matHeaderCellDef>Location</th>
+          <td mat-cell *matCellDef="let row"><code class="sku-code sku-code--green">{{ row.location }}</code></td>
+        </ng-container>
+        <ng-container matColumnDef="zone">
+          <th mat-header-cell *matHeaderCellDef>Zone</th>
+          <td mat-cell *matCellDef="let row"><span class="category-chip">{{ row.zone }}</span></td>
+        </ng-container>
+        <ng-container matColumnDef="currentStock">
+          <th mat-header-cell *matHeaderCellDef>Stock</th>
+          <td mat-cell *matCellDef="let row" class="fw-bold text-blue">{{ row.currentStock }}</td>
+        </ng-container>
+        <ng-container matColumnDef="capacity">
+          <th mat-header-cell *matHeaderCellDef>Capacity</th>
+          <td mat-cell *matCellDef="let row">
+            <div class="cap-cell">
+              <div class="cap-bar-track">
+                <div class="cap-bar-fill"
+                     [style.width.%]="getCapacityPct(row)"
+                     [class.cap-bar-fill--low]="getCapacityPct(row) < 25"
+                     [class.cap-bar-fill--mid]="getCapacityPct(row) >= 25 && getCapacityPct(row) < 70"
+                     [class.cap-bar-fill--hi]="getCapacityPct(row) >= 70">
+                </div>
+              </div>
+              <span class="cap-label">{{ getCapacityPct(row) }}%</span>
+            </div>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="lastUpdated">
+          <th mat-header-cell *matHeaderCellDef>Last Updated</th>
+          <td mat-cell *matCellDef="let row" class="text-muted">{{ row.lastUpdated }}</td>
+        </ng-container>
+        <ng-container matColumnDef="action">
+          <th mat-header-cell *matHeaderCellDef>Action</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge" [ngClass]="getActionClass(row.action)">
+              <mat-icon>{{ getActionIcon(row.action) }}</mat-icon>
+              {{ row.action | titlecase }}
+            </span>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedItemCols"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedItemCols;"></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- Audit Log -->
+  <section class="panel mx-page">
+    <div class="panel__header">
+      <div class="panel__title-row">
+        <mat-icon class="text-gold">receipt_long</mat-icon>
+        <h2 class="panel__title">Immutable Audit Log</h2>
+      </div>
+      <span class="count-badge">Today</span>
+    </div>
+    <div class="table-wrapper">
+      <table mat-table [dataSource]="auditLog" class="data-table">
+        <ng-container matColumnDef="timestamp">
+          <th mat-header-cell *matHeaderCellDef>Time</th>
+          <td mat-cell *matCellDef="let row"><span class="mono text-muted">{{ row.timestamp }}</span></td>
+        </ng-container>
+        <ng-container matColumnDef="sku">
+          <th mat-header-cell *matHeaderCellDef>SKU</th>
+          <td mat-cell *matCellDef="let row"><code class="sku-code">{{ row.sku }}</code></td>
+        </ng-container>
+        <ng-container matColumnDef="action">
+          <th mat-header-cell *matHeaderCellDef>Action</th>
+          <td mat-cell *matCellDef="let row" class="fw-medium">{{ row.action }}</td>
+        </ng-container>
+        <ng-container matColumnDef="qty">
+          <th mat-header-cell *matHeaderCellDef>Qty</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="fw-bold" [class.text-green]="row.qty > 0" [class.text-gold]="row.qty <= 0">
+              {{ row.qty > 0 ? '+' : '' }}{{ row.qty }}
+            </span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="operator">
+          <th mat-header-cell *matHeaderCellDef>Operator</th>
+          <td mat-cell *matCellDef="let row">{{ row.operator }}</td>
+        </ng-container>
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>Type</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge" [ngClass]="getAuditTypeClass(row.type)">
+              <mat-icon>{{ getAuditTypeIcon(row.type) }}</mat-icon>
+              {{ row.type | titlecase }}
+            </span>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedAuditCols"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedAuditCols;"></tr>
+      </table>
+    </div>
+  </section>
+
+</div>

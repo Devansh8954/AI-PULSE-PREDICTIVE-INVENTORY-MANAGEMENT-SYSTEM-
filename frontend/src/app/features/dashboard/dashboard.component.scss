@@ -4,7 +4,7 @@
 
 /* ── Layout: Full-viewport scrollable container ─────────────── */
 .command-center {
-  min-height: 100vh;
+  min-height: 100%;
   background: var(--bg-primary);
   display: flex;
   flex-direction: column;

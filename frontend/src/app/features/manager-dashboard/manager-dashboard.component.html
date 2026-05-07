@@ -1,0 +1,149 @@
+<div class="page">
+
+  <!-- Top Bar -->
+  <header class="page-topbar page-topbar--blue">
+    <div class="page-topbar__left">
+      <mat-icon>manage_accounts</mat-icon>
+      <div>
+        <h1 class="page-topbar__title">Manager View</h1>
+        <p class="page-topbar__sub">Inventory Control &amp; Purchase Orders</p>
+      </div>
+    </div>
+    <div class="page-topbar__right">
+      <span class="role-badge role-badge--blue">MANAGER</span>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <section class="stats-row">
+    <div class="stat-card stat-card--blue">
+      <div class="stat-card__icon"><mat-icon>inventory_2</mat-icon></div>
+      <div class="stat-card__body">
+        <p class="stat-card__label">Total SKUs</p>
+        <p class="stat-card__value">{{ stats.totalSKUs }}</p>
+      </div>
+    </div>
+    <div class="stat-card stat-card--red">
+      <div class="stat-card__icon"><mat-icon>error_outline</mat-icon></div>
+      <div class="stat-card__body">
+        <p class="stat-card__label">Critical Alerts</p>
+        <p class="stat-card__value">{{ stats.criticalAlerts }}</p>
+      </div>
+    </div>
+    <div class="stat-card stat-card--gold">
+      <div class="stat-card__icon"><mat-icon>assignment</mat-icon></div>
+      <div class="stat-card__body">
+        <p class="stat-card__label">Pending POs</p>
+        <p class="stat-card__value">{{ stats.pendingPOs }}</p>
+      </div>
+    </div>
+    <div class="stat-card stat-card--green">
+      <div class="stat-card__icon"><mat-icon>verified</mat-icon></div>
+      <div class="stat-card__body">
+        <p class="stat-card__label">Vendor Reliability</p>
+        <p class="stat-card__value">{{ stats.vendorReliability }}%</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stock Alerts Table -->
+  <section class="panel mx-page">
+    <div class="panel__header">
+      <div class="panel__title-row">
+        <mat-icon class="text-red">warning_amber</mat-icon>
+        <h2 class="panel__title">Stock Alert Items</h2>
+      </div>
+      <span class="count-badge">{{ stockAlerts.length }} items</span>
+    </div>
+    <div class="table-wrapper">
+      <table mat-table [dataSource]="stockAlerts" class="data-table">
+        <ng-container matColumnDef="sku">
+          <th mat-header-cell *matHeaderCellDef>SKU</th>
+          <td mat-cell *matCellDef="let row"><code class="sku-code">{{ row.sku }}</code></td>
+        </ng-container>
+        <ng-container matColumnDef="productName">
+          <th mat-header-cell *matHeaderCellDef>Product</th>
+          <td mat-cell *matCellDef="let row"><span class="fw-medium">{{ row.productName }}</span></td>
+        </ng-container>
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef>Category</th>
+          <td mat-cell *matCellDef="let row"><span class="category-chip">{{ row.category }}</span></td>
+        </ng-container>
+        <ng-container matColumnDef="currentStock">
+          <th mat-header-cell *matHeaderCellDef>Current Stock</th>
+          <td mat-cell *matCellDef="let row">
+            <span [class.text-red]="row.currentStock < row.reorderPoint" class="fw-bold">{{ row.currentStock }}</span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="reorderPoint">
+          <th mat-header-cell *matHeaderCellDef>Reorder Point</th>
+          <td mat-cell *matCellDef="let row"><span class="text-muted">{{ row.reorderPoint }}</span></td>
+        </ng-container>
+        <ng-container matColumnDef="vendor">
+          <th mat-header-cell *matHeaderCellDef>Vendor</th>
+          <td mat-cell *matCellDef="let row">{{ row.vendor }}</td>
+        </ng-container>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge" [ngClass]="getStatusClass(row.status)">
+              <mat-icon>{{ getStatusIcon(row.status) }}</mat-icon>
+              {{ row.status | titlecase }}
+            </span>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedAlertCols"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedAlertCols;"></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- Purchase Orders Table -->
+  <section class="panel mx-page">
+    <div class="panel__header">
+      <div class="panel__title-row">
+        <mat-icon class="text-blue">receipt_long</mat-icon>
+        <h2 class="panel__title">Purchase Orders</h2>
+      </div>
+      <button mat-flat-button class="btn-primary-sm">
+        <mat-icon>add</mat-icon> New PO
+      </button>
+    </div>
+    <div class="table-wrapper">
+      <table mat-table [dataSource]="purchaseOrders" class="data-table">
+        <ng-container matColumnDef="poId">
+          <th mat-header-cell *matHeaderCellDef>PO ID</th>
+          <td mat-cell *matCellDef="let row"><code class="sku-code sku-code--blue">{{ row.poId }}</code></td>
+        </ng-container>
+        <ng-container matColumnDef="vendor">
+          <th mat-header-cell *matHeaderCellDef>Vendor</th>
+          <td mat-cell *matCellDef="let row"><span class="fw-medium">{{ row.vendor }}</span></td>
+        </ng-container>
+        <ng-container matColumnDef="items">
+          <th mat-header-cell *matHeaderCellDef>Items</th>
+          <td mat-cell *matCellDef="let row">{{ row.items }} SKUs</td>
+        </ng-container>
+        <ng-container matColumnDef="totalUnits">
+          <th mat-header-cell *matHeaderCellDef>Total Units</th>
+          <td mat-cell *matCellDef="let row" class="text-blue fw-bold">{{ row.totalUnits }}</td>
+        </ng-container>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge" [ngClass]="getStatusClass(row.status)">
+              <mat-icon>{{ getStatusIcon(row.status) }}</mat-icon>
+              {{ row.status | titlecase }}
+            </span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="createdAt">
+          <th mat-header-cell *matHeaderCellDef>Created</th>
+          <td mat-cell *matCellDef="let row" class="text-muted">{{ row.createdAt }}</td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedPOCols"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedPOCols;"></tr>
+      </table>
+    </div>
+  </section>
+
+</div>

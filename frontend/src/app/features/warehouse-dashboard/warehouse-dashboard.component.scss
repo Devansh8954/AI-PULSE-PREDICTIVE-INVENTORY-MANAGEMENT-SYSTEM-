@@ -1,0 +1,45 @@
+@import '../../shared/styles/dashboard-shared';
+
+.page-topbar--green {
+  border-bottom-color: rgba(63, 185, 80, 0.25);
+  mat-icon { color: #3fb950; }
+}
+
+.cap-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 110px;
+}
+
+.cap-bar-track {
+  flex: 1;
+  height: 5px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.cap-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+
+  &--low { background: #f85149; }
+  &--mid { background: #f0b429; }
+  &--hi  { background: #3fb950; }
+}
+
+.cap-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8b949e;
+  min-width: 32px;
+}
+
+.mono { font-family: 'Fira Code', 'Cascadia Code', monospace; font-size: 12px; }
+
+.sku-code--green {
+  color: #3fb950 !important;
+  background: rgba(63,185,80,0.1) !important;
+}

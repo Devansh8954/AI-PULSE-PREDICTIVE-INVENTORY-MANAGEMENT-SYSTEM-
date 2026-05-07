@@ -1,0 +1,12 @@
+@import '../../shared/styles/dashboard-shared';
+
+.page-topbar--blue {
+  border-bottom-color: rgba(88, 166, 255, 0.25);
+  mat-icon { color: #58a6ff; }
+}
+
+.stat-card--red {
+  border-color: rgba(248, 81, 73, 0.2);
+  .stat-card__icon { background: rgba(248,81,73,0.1); color: #f85149; }
+  .stat-card__value { color: #f85149; }
+}

@@ -1,0 +1,46 @@
+<nav class="sidebar" [class.sidebar--collapsed]="collapsed">
+
+  <!-- Brand -->
+  <div class="sidebar__brand">
+    <div class="sidebar__logo">⚡</div>
+    <div class="sidebar__brand-text" *ngIf="!collapsed">
+      <span class="sidebar__brand-name">AI-Pulse</span>
+      <span class="sidebar__brand-tag">Inventory AI</span>
+    </div>
+    <button class="sidebar__toggle" (click)="onToggle()" [matTooltip]="collapsed ? 'Expand' : 'Collapse'">
+      <mat-icon>{{ collapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+    </button>
+  </div>
+
+  <!-- Section label -->
+  <div class="sidebar__section-label" *ngIf="!collapsed">Dashboards</div>
+
+  <!-- Nav Items -->
+  <ul class="sidebar__nav">
+    <li
+      *ngFor="let item of navItems"
+      class="sidebar__item"
+      [class.sidebar__item--active]="isActive(item.route)"
+      [class]="'sidebar__item sidebar__item--' + item.color + (isActive(item.route) ? ' sidebar__item--active' : '')"
+      (click)="navigate(item.route)"
+      [matTooltip]="collapsed ? item.label : ''"
+      matTooltipPosition="right">
+
+      <div class="sidebar__item-icon">
+        <mat-icon>{{ item.icon }}</mat-icon>
+      </div>
+      <div class="sidebar__item-content" *ngIf="!collapsed">
+        <span class="sidebar__item-label">{{ item.label }}</span>
+        <span class="sidebar__item-badge sidebar__item-badge--{{ item.color }}">{{ item.badge }}</span>
+      </div>
+      <div class="sidebar__item-indicator" *ngIf="isActive(item.route)"></div>
+    </li>
+  </ul>
+
+  <!-- Footer -->
+  <div class="sidebar__footer" *ngIf="!collapsed">
+    <div class="sidebar__footer-dot pulse"></div>
+    <span class="sidebar__footer-text">System Live</span>
+  </div>
+
+</nav>
