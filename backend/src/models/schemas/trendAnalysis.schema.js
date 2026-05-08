@@ -8,7 +8,7 @@ const Joi = require('joi');
 const analyzeTrendSchema = Joi.object({
   keyword: Joi.string().min(2).max(255).trim().required()
     .messages({
-      'any.required': 'keyword is required. Example: { "keyword": "Winter coming" }',
+      'any.required': 'keyword is required. Provide a search term such as "Winter coming".',
       'string.min':   'keyword must be at least 2 characters.',
     }),
 });
