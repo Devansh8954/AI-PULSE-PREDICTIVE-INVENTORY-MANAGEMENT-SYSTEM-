@@ -168,6 +168,64 @@ CREATE TABLE trend_signals (
 
 
 -- =============================================================
+-- TABLE: users
+-- Application users with role-based access control.
+-- Passwords stored as bcrypt hashes — NEVER plaintext.
+-- =============================================================
+CREATE TABLE IF NOT EXISTS users (
+    id              CHAR(36)        NOT NULL DEFAULT (UUID()),
+    name            VARCHAR(150)    NOT NULL,
+    email           VARCHAR(255)    NOT NULL,
+    password_hash   VARCHAR(255)    NOT NULL  COMMENT 'bcrypt hash — never store plaintext',
+    role            ENUM('ADMIN','MANAGER','WAREHOUSE','VIEWER') NOT NULL DEFAULT 'VIEWER',
+    is_active       TINYINT(1)      NOT NULL DEFAULT 1,
+    deleted_at      DATETIME        NULL,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_user_email (email),
+    INDEX idx_user_role (role)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='App users with RBAC roles: ADMIN | MANAGER | WAREHOUSE | VIEWER';
+
+
+-- =============================================================
+-- TABLE: purchase_orders
+-- Purchase orders raised by managers to replenish stock.
+-- line_items stored as JSON: [{ productId, quantity, unitCost }]
+-- =============================================================
+CREATE TABLE IF NOT EXISTS purchase_orders (
+    id                      CHAR(36)        NOT NULL DEFAULT (UUID()),
+    po_number               VARCHAR(50)     NOT NULL  COMMENT 'Human-readable PO ID e.g. PO-2024-0001',
+    vendor_id               CHAR(36)        NOT NULL,
+    line_items              JSON            NOT NULL  COMMENT 'Array of {productId, quantity, unitCost}',
+    total_units             INT             NOT NULL DEFAULT 0,
+    total_cost              DECIMAL(14,2)   NOT NULL DEFAULT 0.00,
+    status                  ENUM('PENDING','APPROVED','DISPATCHED','RECEIVED','CANCELLED')
+                                            NOT NULL DEFAULT 'PENDING',
+    notes                   TEXT            NULL,
+    expected_delivery_date  DATE            NULL,
+    created_by              CHAR(36)        NULL      COMMENT 'FK to users.id — manager who raised PO',
+    deleted_at              DATETIME        NULL,
+    created_at              DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_po_number (po_number),
+    INDEX idx_po_status     (status),
+    INDEX idx_po_vendor     (vendor_id),
+    INDEX idx_po_created_at (created_at),
+
+    CONSTRAINT fk_po_vendor
+        FOREIGN KEY (vendor_id)  REFERENCES vendors (id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_po_created_by
+        FOREIGN KEY (created_by) REFERENCES users   (id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Purchase orders for stock replenishment. status tracks lifecycle.';
+
+
+-- =============================================================
 -- VIEWS
 -- =============================================================
 

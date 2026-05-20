@@ -9,7 +9,10 @@
     "test": "jest --runInBand --forceExit",
     "test:coverage": "jest --coverage --runInBand --forceExit",
     "lint": "eslint src/**/*.js",
-    "db:sync": "node src/scripts/syncDb.js"
+    "db:sync":       "node src/scripts/syncDb.js",
+    "db:seed-users": "node src/scripts/seedUsers.js",
+    "db:seed-all":   "node src/scripts/seedAll.js",
+    "db:setup":      "node src/scripts/fixAndSeedUsers.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

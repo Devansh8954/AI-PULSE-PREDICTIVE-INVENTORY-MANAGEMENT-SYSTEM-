@@ -14,27 +14,27 @@
     </div>
   </header>
 
-  <!-- Stats -->
+  <!-- Stats (live from API) -->
   <section class="stats-row">
     <div class="stat-card stat-card--blue">
       <div class="stat-card__icon"><mat-icon>inventory_2</mat-icon></div>
       <div class="stat-card__body">
-        <p class="stat-card__label">Total SKUs</p>
-        <p class="stat-card__value">{{ stats.totalSKUs }}</p>
+        <p class="stat-card__label">Low Stock Items</p>
+        <p class="stat-card__value">{{ loadingAlerts ? '…' : stats.totalSKUs }}</p>
       </div>
     </div>
     <div class="stat-card stat-card--red">
       <div class="stat-card__icon"><mat-icon>error_outline</mat-icon></div>
       <div class="stat-card__body">
         <p class="stat-card__label">Critical Alerts</p>
-        <p class="stat-card__value">{{ stats.criticalAlerts }}</p>
+        <p class="stat-card__value">{{ loadingAlerts ? '…' : stats.criticalAlerts }}</p>
       </div>
     </div>
     <div class="stat-card stat-card--gold">
       <div class="stat-card__icon"><mat-icon>assignment</mat-icon></div>
       <div class="stat-card__body">
         <p class="stat-card__label">Pending POs</p>
-        <p class="stat-card__value">{{ stats.pendingPOs }}</p>
+        <p class="stat-card__value">{{ loadingOrders ? '…' : stats.pendingPOs }}</p>
       </div>
     </div>
     <div class="stat-card stat-card--green">
@@ -46,7 +46,13 @@
     </div>
   </section>
 
-  <!-- Stock Alerts Table -->
+  <!-- API Error Banner -->
+  <div *ngIf="apiError" class="api-error-banner">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ apiError }}</span>
+  </div>
+
+  <!-- Stock Alerts Table (live from /api/v1/inventory?lowStock=true) -->
   <section class="panel mx-page">
     <div class="panel__header">
       <div class="panel__title-row">
@@ -55,24 +61,35 @@
       </div>
       <span class="count-badge">{{ stockAlerts.length }} items</span>
     </div>
-    <div class="table-wrapper">
+
+    <div *ngIf="loadingAlerts" class="loading-row">
+      <mat-spinner diameter="28"></mat-spinner>
+      <span>Loading stock alerts…</span>
+    </div>
+
+    <div *ngIf="!loadingAlerts && stockAlerts.length === 0" class="empty-state">
+      <mat-icon>check_circle</mat-icon>
+      <p>All stock levels are healthy.</p>
+    </div>
+
+    <div class="table-wrapper" *ngIf="!loadingAlerts && stockAlerts.length > 0">
       <table mat-table [dataSource]="stockAlerts" class="data-table">
         <ng-container matColumnDef="sku">
           <th mat-header-cell *matHeaderCellDef>SKU</th>
-          <td mat-cell *matCellDef="let row"><code class="sku-code">{{ row.sku }}</code></td>
+          <td mat-cell *matCellDef="let row"><code class="sku-code">{{ row.product?.sku ?? '—' }}</code></td>
         </ng-container>
         <ng-container matColumnDef="productName">
           <th mat-header-cell *matHeaderCellDef>Product</th>
-          <td mat-cell *matCellDef="let row"><span class="fw-medium">{{ row.productName }}</span></td>
+          <td mat-cell *matCellDef="let row"><span class="fw-medium">{{ row.product?.name ?? '—' }}</span></td>
         </ng-container>
         <ng-container matColumnDef="category">
           <th mat-header-cell *matHeaderCellDef>Category</th>
-          <td mat-cell *matCellDef="let row"><span class="category-chip">{{ row.category }}</span></td>
+          <td mat-cell *matCellDef="let row"><span class="category-chip">{{ row.product?.category ?? '—' }}</span></td>
         </ng-container>
         <ng-container matColumnDef="currentStock">
           <th mat-header-cell *matHeaderCellDef>Current Stock</th>
           <td mat-cell *matCellDef="let row">
-            <span [class.text-red]="row.currentStock < row.reorderPoint" class="fw-bold">{{ row.currentStock }}</span>
+            <span [class.text-red]="row.quantityOnHand <= row.reorderPoint" class="fw-bold">{{ row.quantityOnHand }}</span>
           </td>
         </ng-container>
         <ng-container matColumnDef="reorderPoint">
@@ -81,14 +98,14 @@
         </ng-container>
         <ng-container matColumnDef="vendor">
           <th mat-header-cell *matHeaderCellDef>Vendor</th>
-          <td mat-cell *matCellDef="let row">{{ row.vendor }}</td>
+          <td mat-cell *matCellDef="let row">{{ row.vendor?.name ?? '—' }}</td>
         </ng-container>
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>Status</th>
           <td mat-cell *matCellDef="let row">
-            <span class="badge" [ngClass]="getStatusClass(row.status)">
-              <mat-icon>{{ getStatusIcon(row.status) }}</mat-icon>
-              {{ row.status | titlecase }}
+            <span class="badge" [ngClass]="getStatusClass(getAlertStatus(row))">
+              <mat-icon>{{ getStatusIcon(getAlertStatus(row)) }}</mat-icon>
+              {{ getAlertStatus(row) | titlecase }}
             </span>
           </td>
         </ng-container>
@@ -98,34 +115,45 @@
     </div>
   </section>
 
-  <!-- Purchase Orders Table -->
+  <!-- Purchase Orders Table (live from /api/v1/purchase-orders) -->
   <section class="panel mx-page">
     <div class="panel__header">
       <div class="panel__title-row">
         <mat-icon class="text-blue">receipt_long</mat-icon>
         <h2 class="panel__title">Purchase Orders</h2>
       </div>
-      <button mat-flat-button class="btn-primary-sm">
+      <button mat-flat-button type="button" class="btn-primary-sm" (click)="openNewPO()">
         <mat-icon>add</mat-icon> New PO
       </button>
     </div>
-    <div class="table-wrapper">
+
+    <div *ngIf="loadingOrders" class="loading-row">
+      <mat-spinner diameter="28"></mat-spinner>
+      <span>Loading purchase orders…</span>
+    </div>
+
+    <div *ngIf="!loadingOrders && purchaseOrders.length === 0" class="empty-state">
+      <mat-icon>receipt_long</mat-icon>
+      <p>No purchase orders yet. Click <strong>New PO</strong> to create one.</p>
+    </div>
+
+    <div class="table-wrapper" *ngIf="!loadingOrders && purchaseOrders.length > 0">
       <table mat-table [dataSource]="purchaseOrders" class="data-table">
-        <ng-container matColumnDef="poId">
-          <th mat-header-cell *matHeaderCellDef>PO ID</th>
-          <td mat-cell *matCellDef="let row"><code class="sku-code">{{ row.poId }}</code></td>
+        <ng-container matColumnDef="poNumber">
+          <th mat-header-cell *matHeaderCellDef>PO Number</th>
+          <td mat-cell *matCellDef="let row"><code class="sku-code">{{ row.poNumber }}</code></td>
         </ng-container>
         <ng-container matColumnDef="vendor">
           <th mat-header-cell *matHeaderCellDef>Vendor</th>
-          <td mat-cell *matCellDef="let row"><span class="fw-medium">{{ row.vendor }}</span></td>
-        </ng-container>
-        <ng-container matColumnDef="items">
-          <th mat-header-cell *matHeaderCellDef>Items</th>
-          <td mat-cell *matCellDef="let row">{{ row.items }} SKUs</td>
+          <td mat-cell *matCellDef="let row"><span class="fw-medium">{{ row.vendor?.name ?? row.vendorId }}</span></td>
         </ng-container>
         <ng-container matColumnDef="totalUnits">
           <th mat-header-cell *matHeaderCellDef>Total Units</th>
           <td mat-cell *matCellDef="let row" class="text-blue fw-bold">{{ row.totalUnits }}</td>
+        </ng-container>
+        <ng-container matColumnDef="totalCost">
+          <th mat-header-cell *matHeaderCellDef>Total Cost</th>
+          <td mat-cell *matCellDef="let row">₹ {{ row.totalCost | number:'1.2-2' }}</td>
         </ng-container>
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>Status</th>
@@ -138,12 +166,94 @@
         </ng-container>
         <ng-container matColumnDef="createdAt">
           <th mat-header-cell *matHeaderCellDef>Created</th>
-          <td mat-cell *matCellDef="let row" class="text-muted">{{ row.createdAt }}</td>
+          <td mat-cell *matCellDef="let row" class="text-muted">{{ row.createdAt | date:'dd MMM, HH:mm' }}</td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="displayedPOCols"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedPOCols;"></tr>
       </table>
     </div>
   </section>
+
+  <!-- ── New PO Modal Form ─────────────────────────────────────────────────── -->
+  <div class="modal-backdrop" *ngIf="showPOForm" (click)="cancelPO()"></div>
+  <form class="modal-panel" *ngIf="showPOForm" [formGroup]="poForm" (ngSubmit)="submitPO()">
+
+    <div class="modal-header">
+      <mat-icon class="text-blue">receipt_long</mat-icon>
+      <h2>Create Purchase Order</h2>
+      <button mat-icon-button type="button" (click)="cancelPO()"><mat-icon>close</mat-icon></button>
+    </div>
+
+    <!-- Vendor -->
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Vendor</mat-label>
+        <mat-select formControlName="vendorId">
+          <mat-option *ngFor="let v of vendors" [value]="v.id">{{ v.name }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <!-- Line Items -->
+    <div class="line-items-header">
+      <span class="fw-medium">Line Items</span>
+      <button mat-stroked-button type="button" class="btn-sm" (click)="addLineItem()">
+        <mat-icon>add</mat-icon> Add Item
+      </button>
+    </div>
+
+    <div formArrayName="lineItems">
+      <div *ngFor="let item of lineItems.controls; let i = index"
+           [formGroupName]="i" class="line-item-row">
+
+        <mat-form-field appearance="outline" class="flex-grow">
+          <mat-label>Product</mat-label>
+          <mat-select formControlName="productId">
+            <mat-option *ngFor="let p of products" [value]="p.id">{{ p.name }} ({{ p.sku }})</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="qty-field">
+          <mat-label>Qty</mat-label>
+          <input matInput type="number" formControlName="quantity" min="1" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="cost-field">
+          <mat-label>Unit Cost (₹)</mat-label>
+          <input matInput type="number" formControlName="unitCost" min="0" />
+        </mat-form-field>
+
+        <button mat-icon-button type="button" color="warn"
+                (click)="removeLineItem(i)" [disabled]="lineItems.length === 1">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Notes & Delivery Date -->
+    <div class="form-row two-col">
+      <mat-form-field appearance="outline">
+        <mat-label>Expected Delivery Date</mat-label>
+        <input matInput type="date" formControlName="expectedDeliveryDate" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Notes</mat-label>
+        <textarea matInput formControlName="notes" rows="2"></textarea>
+      </mat-form-field>
+    </div>
+
+    <!-- Error -->
+    <p class="form-error" *ngIf="poError">{{ poError }}</p>
+
+    <!-- Actions -->
+    <div class="modal-actions">
+      <button mat-stroked-button type="button" (click)="cancelPO()">Cancel</button>
+      <button mat-flat-button type="submit" color="primary" [disabled]="submittingPO">
+        <mat-spinner *ngIf="submittingPO" diameter="18"></mat-spinner>
+        <span *ngIf="!submittingPO">Create PO</span>
+      </button>
+    </div>
+  </form>
 
 </div>

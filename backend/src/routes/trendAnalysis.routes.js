@@ -10,6 +10,6 @@ const { analyzeTrendSchema } = require('../models/schemas/trendAnalysis.schema')
 router.post('/analyze',  auth(['ADMIN', 'MANAGER']), validate(analyzeTrendSchema), ctrl.analyzeTrend);
 
 // GET  /api/v1/trends/signals  → list persisted trend signals
-router.get ('/signals',  auth(['ADMIN', 'MANAGER', 'VIEWER']),                     ctrl.getSignals);
+router.get ('/signals',  auth(['ADMIN', 'MANAGER', 'WAREHOUSE', 'VIEWER']),                ctrl.getSignals);
 
 module.exports = router;

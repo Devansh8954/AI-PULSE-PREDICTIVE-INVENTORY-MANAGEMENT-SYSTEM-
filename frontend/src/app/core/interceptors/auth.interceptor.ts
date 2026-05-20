@@ -5,17 +5,20 @@ import {
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { Router } from '@angular/router';
 
 /**
  * AuthInterceptor
  * ---------------
  * 1. Attaches JWT Bearer token from localStorage to every outgoing API request.
- * 2. Catches 401 responses globally and redirects to login.
+ * 2. Catches 401 responses globally and redirects to /login (clears token).
  *
  * Registered as a multi-provider in AppModule so it applies to all HttpClient calls.
  */
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
+
+  constructor(private router: Router) {}
 
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     const token = localStorage.getItem('ai_pulse_token');
@@ -28,9 +31,11 @@ export class AuthInterceptor implements HttpInterceptor {
     return next.handle(authReq).pipe(
       catchError((err: HttpErrorResponse) => {
         if (err.status === 401) {
-          // Token expired or invalid — clear storage (router injection omitted for brevity)
+          // Token expired or invalid — clear storage and force login
           localStorage.removeItem('ai_pulse_token');
-          console.warn('[AuthInterceptor] 401 received — token cleared.');
+          localStorage.removeItem('ai_pulse_user');
+          console.warn('[AuthInterceptor] 401 received — redirecting to login.');
+          this.router.navigate(['/login']);
         }
         return throwError(() => err);
       })

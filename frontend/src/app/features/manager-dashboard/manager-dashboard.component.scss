@@ -5,9 +5,89 @@
   mat-icon { color: #58a6ff; }
 }
 
-// red stat card used by manager
 .stat-card--red {
   border-color: rgba(248, 81, 73, 0.2);
   .stat-card__icon { background: rgba(248,81,73,0.1); color: #f85149; }
   .stat-card__value { color: #f85149; }
 }
+
+// ── Loading & empty states ────────────────────────────────────────────────────
+.loading-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 24px 20px; color: #8b949e; font-size: 14px;
+}
+
+.api-error-banner {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 24px 16px;
+  padding: 12px 16px;
+  background: rgba(248,81,73,0.1);
+  border: 1px solid rgba(248,81,73,0.3);
+  border-radius: 8px;
+  color: #f85149;
+  font-size: 14px;
+}
+
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 40px 20px; color: #8b949e;
+  mat-icon { font-size: 36px; width: 36px; height: 36px; }
+  p { margin: 0; font-size: 14px; }
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 999;
+}
+
+.modal-panel {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 28px;
+  width: min(700px, 95vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+
+.modal-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 24px;
+  h2 { flex: 1; margin: 0; font-size: 18px; color: #e6edf3; }
+}
+
+.form-row { margin-bottom: 16px; }
+.two-col  { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.full-width { width: 100%; }
+
+.line-items-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px; color: #8b949e;
+}
+
+.line-item-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 8px;
+
+  .flex-grow  { flex: 1; }
+  .qty-field  { width: 90px;  flex-shrink: 0; }
+  .cost-field { width: 130px; flex-shrink: 0; }
+}
+
+.modal-actions {
+  display: flex; justify-content: flex-end; gap: 12px;
+  margin-top: 24px; padding-top: 20px;
+  border-top: 1px solid #30363d;
+}
+
+.btn-sm { font-size: 13px; height: 36px; }
+.form-error { color: #f85149; font-size: 13px; margin: 8px 0; }
+

@@ -89,19 +89,22 @@ const listInventory = async ({ page = 1, limit = 20, lowStock = false }) => {
   const offset     = (Math.max(1, page) - 1) * Math.min(limit, 100);
   const safeLimit  = Math.min(limit, 100);
 
+  const { sequelize } = require('../config/db.config');
+
   const whereClause = lowStock
-    ? { [Op.and]: [{ quantityOnHand: { [Op.lte]: { col: 'reorder_point' } } }] }
+    ? { [Op.and]: [sequelize.literal('quantity_on_hand <= reorder_point')] }
     : {};
 
   const { rows: data, count: total } = await Inventory.findAndCountAll({
-    where:   whereClause,
+    where:    whereClause,
     include: [
       { model: Product, as: 'product', attributes: ['id', 'sku', 'name', 'category'] },
       { model: Vendor,  as: 'vendor',  attributes: ['id', 'name', 'avgLeadDays'] },
     ],
-    limit:   safeLimit,
+    limit:    safeLimit,
     offset,
-    order:   [['updatedAt', 'DESC']],
+    subQuery: false,        // required when using include + limit/offset together
+    order:    [['updatedAt', 'DESC']],
   });
 
   return { data, meta: { total, page, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) } };

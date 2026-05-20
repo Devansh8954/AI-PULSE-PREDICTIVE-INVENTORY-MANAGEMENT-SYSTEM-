@@ -6,133 +6,181 @@
       <mat-icon>analytics</mat-icon>
       <div class="page-topbar__text">
         <h1 class="page-topbar__title">Analyst Studio</h1>
-        <p class="page-topbar__sub">Demand Forecasting &amp; Trend Intelligence</p>
+        <p class="page-topbar__sub">Demand Forecasting &amp; Trend Intelligence — Live Data</p>
       </div>
     </div>
     <div class="page-topbar__right">
+      <button mat-icon-button (click)="onRefresh()" matTooltip="Refresh forecasts" [disabled]="isLoading">
+        <mat-icon>refresh</mat-icon>
+      </button>
       <span class="role-badge role-badge--purple">ANALYST</span>
     </div>
   </header>
 
-  <!-- Stats -->
-  <section class="stats-row">
-    <div class="stat-card stat-card--purple">
-      <div class="stat-card__icon"><mat-icon>precision_manufacturing</mat-icon></div>
-      <div class="stat-card__body">
-        <p class="stat-card__label">Forecast Accuracy</p>
-        <p class="stat-card__value">{{ stats.forecastAccuracy }}%</p>
-      </div>
-    </div>
-    <div class="stat-card stat-card--blue">
-      <div class="stat-card__icon"><mat-icon>hub</mat-icon></div>
-      <div class="stat-card__body">
-        <p class="stat-card__label">Signals Analyzed</p>
-        <p class="stat-card__value">{{ stats.signalsAnalyzed }}</p>
-      </div>
-    </div>
-    <div class="stat-card stat-card--gold">
-      <div class="stat-card__icon"><mat-icon>hourglass_bottom</mat-icon></div>
-      <div class="stat-card__body">
-        <p class="stat-card__label">Avg. Depletion Days</p>
-        <p class="stat-card__value">{{ stats.avgDepletionDays }}d</p>
-      </div>
-    </div>
-    <div class="stat-card stat-card--green">
-      <div class="stat-card__icon"><mat-icon>category</mat-icon></div>
-      <div class="stat-card__body">
-        <p class="stat-card__label">Categories Tracked</p>
-        <p class="stat-card__value">{{ stats.categoriesTracked }}</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Charts Row -->
-  <div class="charts-row">
-    <section class="panel chart-panel-lg">
-      <div class="panel__header">
-        <div class="panel__title-row">
-          <mat-icon class="text-purple">show_chart</mat-icon>
-          <h2 class="panel__title">Actual vs Predicted Demand — 6 Weeks</h2>
-        </div>
-      </div>
-      <div class="chart-container-lg">
-        <canvas #lineChart></canvas>
-      </div>
-    </section>
-
-    <section class="panel chart-panel-sm">
-      <div class="panel__header">
-        <div class="panel__title-row">
-          <mat-icon class="text-blue">donut_large</mat-icon>
-          <h2 class="panel__title">Signal Mix</h2>
-        </div>
-      </div>
-      <div class="chart-container-lg">
-        <canvas #pieChart></canvas>
-      </div>
-    </section>
+  <!-- API Error Banner -->
+  <div class="api-error-banner" *ngIf="apiError">
+    <mat-icon>cloud_off</mat-icon>
+    <span>{{ apiError }}</span>
   </div>
 
-  <!-- Forecast Table -->
-  <section class="panel mx-page">
-    <div class="panel__header">
-      <div class="panel__title-row">
-        <mat-icon class="text-gold">table_chart</mat-icon>
-        <h2 class="panel__title">30-Day Demand Forecast</h2>
+  <!-- Loading state -->
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Loading forecast data from backend…</p>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+
+    <!-- Stats (derived from live data) -->
+    <section class="stats-row">
+      <div class="stat-card stat-card--purple">
+        <div class="stat-card__icon"><mat-icon>precision_manufacturing</mat-icon></div>
+        <div class="stat-card__body">
+          <p class="stat-card__label">Avg Confidence</p>
+          <p class="stat-card__value">{{ stats.forecastAccuracy }}%</p>
+        </div>
       </div>
-      <span class="count-badge">{{ forecastRows.length }} SKUs</span>
+      <div class="stat-card stat-card--blue">
+        <div class="stat-card__icon"><mat-icon>hub</mat-icon></div>
+        <div class="stat-card__body">
+          <p class="stat-card__label">Products Forecast</p>
+          <p class="stat-card__value">{{ stats.signalsAnalyzed }}</p>
+        </div>
+      </div>
+      <div class="stat-card stat-card--gold">
+        <div class="stat-card__icon"><mat-icon>hourglass_bottom</mat-icon></div>
+        <div class="stat-card__body">
+          <p class="stat-card__label">Avg. Depletion Days</p>
+          <p class="stat-card__value">{{ stats.avgDepletionDays }}d</p>
+        </div>
+      </div>
+      <div class="stat-card stat-card--green">
+        <div class="stat-card__icon"><mat-icon>category</mat-icon></div>
+        <div class="stat-card__body">
+          <p class="stat-card__label">Categories Tracked</p>
+          <p class="stat-card__value">{{ stats.categoriesTracked }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Empty state -->
+    <div class="empty-state" *ngIf="!forecastRows.length && !apiError">
+      <mat-icon>bar_chart</mat-icon>
+      <h3>No forecast data available</h3>
+      <p>Use the Admin Dashboard to run an AI trend analysis. Signals will appear here automatically.</p>
     </div>
-    <div class="table-wrapper">
-      <table mat-table [dataSource]="forecastRows" class="data-table">
-        <ng-container matColumnDef="sku">
-          <th mat-header-cell *matHeaderCellDef>SKU</th>
-          <td mat-cell *matCellDef="let row"><code class="sku-code">{{ row.sku }}</code></td>
-        </ng-container>
-        <ng-container matColumnDef="productName">
-          <th mat-header-cell *matHeaderCellDef>Product</th>
-          <td mat-cell *matCellDef="let row"><span class="fw-medium">{{ row.productName }}</span></td>
-        </ng-container>
-        <ng-container matColumnDef="category">
-          <th mat-header-cell *matHeaderCellDef>Category</th>
-          <td mat-cell *matCellDef="let row"><span class="category-chip">{{ row.category }}</span></td>
-        </ng-container>
-        <ng-container matColumnDef="currentStock">
-          <th mat-header-cell *matHeaderCellDef>Stock</th>
-          <td mat-cell *matCellDef="let row" class="fw-bold text-blue">{{ row.currentStock }}</td>
-        </ng-container>
-        <ng-container matColumnDef="predictedDemand30d">
-          <th mat-header-cell *matHeaderCellDef>Predicted 30d</th>
-          <td mat-cell *matCellDef="let row" class="text-purple fw-bold">{{ row.predictedDemand30d }}</td>
-        </ng-container>
-        <ng-container matColumnDef="depletionDays">
-          <th mat-header-cell *matHeaderCellDef>Depletion</th>
-          <td mat-cell *matCellDef="let row">
-            <span class="fw-bold" [ngClass]="getDepletionClass(row.depletionDays)">{{ row.depletionDays }}d</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="confidence">
-          <th mat-header-cell *matHeaderCellDef>Confidence</th>
-          <td mat-cell *matCellDef="let row">
-            <div class="conf-cell">
-              <div class="conf-bar-track">
-                <div class="conf-bar-fill" [style.width.%]="row.confidence"></div>
-              </div>
-              <span class="conf-label">{{ row.confidence }}%</span>
+
+    <ng-container *ngIf="forecastRows.length">
+
+      <!-- Charts Row -->
+      <div class="charts-row">
+        <section class="panel chart-panel-lg">
+          <div class="panel__header">
+            <div class="panel__title-row">
+              <mat-icon class="text-purple">show_chart</mat-icon>
+              <h2 class="panel__title">Current Stock vs Predicted Demand — Top Products</h2>
             </div>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="trend">
-          <th mat-header-cell *matHeaderCellDef>Trend</th>
-          <td mat-cell *matCellDef="let row">
-            <span class="trend-icon" [ngClass]="getTrendClass(row.trend)">
-              <mat-icon>{{ getTrendIcon(row.trend) }}</mat-icon>
-            </span>
-          </td>
-        </ng-container>
-        <tr mat-header-row *matHeaderRowDef="displayedCols"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedCols;"></tr>
-      </table>
-    </div>
-  </section>
+          </div>
+          <div class="chart-container-lg">
+            <canvas #lineChart></canvas>
+          </div>
+        </section>
+
+        <section class="panel chart-panel-sm">
+          <div class="panel__header">
+            <div class="panel__title-row">
+              <mat-icon class="text-blue">donut_large</mat-icon>
+              <h2 class="panel__title">Demand by Category</h2>
+            </div>
+          </div>
+          <div class="chart-container-lg">
+            <canvas #pieChart></canvas>
+          </div>
+        </section>
+      </div>
+
+      <!-- Forecast Table -->
+      <section class="panel mx-page">
+        <div class="panel__header">
+          <div class="panel__title-row">
+            <mat-icon class="text-gold">table_chart</mat-icon>
+            <h2 class="panel__title">30-Day Demand Forecast</h2>
+          </div>
+          <span class="count-badge">{{ forecastRows.length }} SKUs</span>
+        </div>
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="forecastRows" class="data-table">
+
+            <ng-container matColumnDef="sku">
+              <th mat-header-cell *matHeaderCellDef>SKU</th>
+              <td mat-cell *matCellDef="let row"><code class="sku-code">{{ row.sku }}</code></td>
+            </ng-container>
+
+            <ng-container matColumnDef="productName">
+              <th mat-header-cell *matHeaderCellDef>Product</th>
+              <td mat-cell *matCellDef="let row"><span class="fw-medium">{{ row.productName }}</span></td>
+            </ng-container>
+
+            <ng-container matColumnDef="category">
+              <th mat-header-cell *matHeaderCellDef>Category</th>
+              <td mat-cell *matCellDef="let row"><span class="category-chip">{{ row.category }}</span></td>
+            </ng-container>
+
+            <ng-container matColumnDef="currentStock">
+              <th mat-header-cell *matHeaderCellDef>Stock</th>
+              <td mat-cell *matCellDef="let row" class="fw-bold text-blue">{{ row.currentStock }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="predictedDemand">
+              <th mat-header-cell *matHeaderCellDef>Predicted 30d</th>
+              <td mat-cell *matCellDef="let row" class="text-purple fw-bold">{{ row.predictedDemand }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="depletionDays">
+              <th mat-header-cell *matHeaderCellDef>Depletion</th>
+              <td mat-cell *matCellDef="let row">
+                <span class="fw-bold" [ngClass]="getDepletionClass(row.depletionDays)">
+                  {{ row.depletionDays === 999 ? '∞' : row.depletionDays + 'd' }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="confidence">
+              <th mat-header-cell *matHeaderCellDef>Confidence</th>
+              <td mat-cell *matCellDef="let row">
+                <div class="conf-cell">
+                  <div class="conf-bar-track">
+                    <div class="conf-bar-fill" [style.width.%]="row.confidence"></div>
+                  </div>
+                  <span class="conf-label">{{ row.confidence }}%</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="alertLevel">
+              <th mat-header-cell *matHeaderCellDef>Alert</th>
+              <td mat-cell *matCellDef="let row">
+                <span class="badge" [ngClass]="getAlertClass(row.alertLevel)">{{ row.alertLevel }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="trend">
+              <th mat-header-cell *matHeaderCellDef>Trend</th>
+              <td mat-cell *matCellDef="let row">
+                <span class="trend-icon" [ngClass]="getTrendClass(row.trend)">
+                  <mat-icon>{{ getTrendIcon(row.trend) }}</mat-icon>
+                </span>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedCols"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedCols;"></tr>
+          </table>
+        </div>
+      </section>
+
+    </ng-container>
+
+  </ng-container>
 
 </div>

@@ -13,15 +13,15 @@
 const rateLimit = require('express-rate-limit');
 
 const rateLimiter = rateLimit({
-  windowMs:         15 * 60 * 1000,  // 15 minutes
-  max:              100,              // max requests per window per IP
+  windowMs:         Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max:              Number(process.env.RATE_LIMIT_MAX)        || 100,
   standardHeaders:  true,            // include RateLimit-* headers in response
   legacyHeaders:    false,
   message: {
     success: false,
     error: {
       code:    'RATE_LIMIT_EXCEEDED',
-      message: 'Too many requests from this IP. Please wait 15 minutes and try again.',
+      message: 'Too many requests from this IP. Please wait and try again.',
     },
   },
 });

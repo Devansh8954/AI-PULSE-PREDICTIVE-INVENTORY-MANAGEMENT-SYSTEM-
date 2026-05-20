@@ -7,14 +7,14 @@ const validate = require('../middlewares/validate.middleware');
 const { createProductSchema, updateProductSchema } = require('../models/schemas/product.schema');
 
 // ── CRUD
-router.get   ('/',     auth(['ADMIN', 'MANAGER', 'VIEWER']), ctrl.listProducts);
-router.get   ('/:id',  auth(['ADMIN', 'MANAGER', 'VIEWER']), ctrl.getProductById);
-router.post  ('/',     auth(['ADMIN']),                      validate(createProductSchema), ctrl.createProduct);
-router.put   ('/:id',  auth(['ADMIN', 'MANAGER']),           validate(updateProductSchema), ctrl.updateProduct);
-router.delete('/:id',  auth(['ADMIN']),                      ctrl.deleteProduct);
+router.get   ('/',     auth(['ADMIN', 'MANAGER', 'WAREHOUSE', 'VIEWER']), ctrl.listProducts);
+router.get   ('/:id',  auth(['ADMIN', 'MANAGER', 'WAREHOUSE', 'VIEWER']), ctrl.getProductById);
+router.post  ('/',     auth(['ADMIN']),                                    validate(createProductSchema), ctrl.createProduct);
+router.put   ('/:id',  auth(['ADMIN', 'MANAGER']),                        validate(updateProductSchema), ctrl.updateProduct);
+router.delete('/:id',  auth(['ADMIN']),                                   ctrl.deleteProduct);
 
 // ── Inventory join (key endpoint)
 // GET /api/v1/products/:id/inventory
-router.get   ('/:id/inventory', auth(['ADMIN', 'MANAGER', 'VIEWER']), ctrl.getInventory);
+router.get   ('/:id/inventory', auth(['ADMIN', 'MANAGER', 'WAREHOUSE', 'VIEWER']), ctrl.getInventory);
 
 module.exports = router;

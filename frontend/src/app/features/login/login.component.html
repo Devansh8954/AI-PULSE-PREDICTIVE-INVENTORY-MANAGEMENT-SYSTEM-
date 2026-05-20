@@ -1,0 +1,110 @@
+<div class="login-page">
+
+  <!-- Left panel — Branding -->
+  <div class="brand-panel">
+    <div class="brand-content">
+      <div class="brand-logo">
+        <mat-icon>auto_graph</mat-icon>
+      </div>
+      <h1 class="brand-name">AI-Pulse</h1>
+      <p class="brand-tagline">Predictive Inventory Management</p>
+
+      <div class="brand-features">
+        <div class="feature-item">
+          <mat-icon>trending_up</mat-icon>
+          <span>AI-powered demand forecasting</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>inventory_2</mat-icon>
+          <span>Real-time stock intelligence</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>bolt</mat-icon>
+          <span>Optimistic concurrency control</span>
+        </div>
+        <div class="feature-item">
+          <mat-icon>people</mat-icon>
+          <span>Role-based access (ADMIN · MANAGER · WAREHOUSE · VIEWER)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel — Login form -->
+  <div class="form-panel">
+    <div class="form-card">
+
+      <div class="form-card__header">
+        <h2>Welcome back</h2>
+        <p>Sign in to access your role-specific dashboard</p>
+      </div>
+
+      <!-- Quick-fill seed buttons -->
+      <div class="quick-fill">
+        <span class="quick-fill__label">Demo accounts:</span>
+        <button *ngFor="let q of quickLogins"
+                type="button"
+                class="quick-btn"
+                [class]="'quick-btn--' + q.role.toLowerCase()"
+                (click)="fill(q.email)"
+                [matTooltip]="q.email">
+          <mat-icon>{{ q.icon }}</mat-icon>
+          {{ q.label }}
+        </button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+
+        <!-- Email -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email address</mat-label>
+          <mat-icon matPrefix>email</mat-icon>
+          <input matInput
+                 id="login-email"
+                 type="email"
+                 formControlName="email"
+                 placeholder="you@aipulse.com"
+                 autocomplete="email" />
+          <mat-error *ngIf="form.get('email')?.hasError('required')">Email is required</mat-error>
+          <mat-error *ngIf="form.get('email')?.hasError('email')">Enter a valid email</mat-error>
+        </mat-form-field>
+
+        <!-- Password -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <mat-icon matPrefix>lock</mat-icon>
+          <input matInput
+                 id="login-password"
+                 [type]="showPass ? 'text' : 'password'"
+                 formControlName="password"
+                 autocomplete="current-password" />
+          <button mat-icon-button matSuffix type="button"
+                  (click)="showPass = !showPass">
+            <mat-icon>{{ showPass ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error *ngIf="form.get('password')?.hasError('required')">Password is required</mat-error>
+        </mat-form-field>
+
+        <!-- Error -->
+        <div class="login-error" *ngIf="errorMsg">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ errorMsg }}</span>
+        </div>
+
+        <!-- Submit -->
+        <button mat-flat-button
+                id="login-submit"
+                type="submit"
+                class="login-btn"
+                [disabled]="loading">
+          <mat-spinner *ngIf="loading" diameter="20"></mat-spinner>
+          <span *ngIf="!loading">Sign In &rarr;</span>
+        </button>
+
+        <p class="seed-hint">
+          All demo accounts use password: <code>Password&#64;123</code>
+        </p>
+      </form>
+    </div>
+  </div>
+</div>

@@ -9,8 +9,8 @@ const { adjustInventorySchema } = require('../models/schemas/inventory.schema');
 // GET   /api/v1/inventory              → list all inventory (paginated; ?lowStock=true for alerts)
 // GET   /api/v1/inventory/:id          → get one record (includes current version for OCC)
 // PATCH /api/v1/inventory/:id/adjust   → ⚡ OCC stock adjustment (requires delta + version)
-router.get  ('/',           auth(['ADMIN', 'MANAGER', 'VIEWER']),              ctrl.listInventory);
-router.get  ('/:id',        auth(['ADMIN', 'MANAGER', 'VIEWER']),              ctrl.getInventoryById);
+router.get  ('/',           auth(['ADMIN', 'MANAGER', 'WAREHOUSE', 'VIEWER']),              ctrl.listInventory);
+router.get  ('/:id',        auth(['ADMIN', 'MANAGER', 'WAREHOUSE', 'VIEWER']),              ctrl.getInventoryById);
 router.patch('/:id/adjust', auth(['ADMIN', 'MANAGER']), validate(adjustInventorySchema), ctrl.adjustStock);
 
 module.exports = router;

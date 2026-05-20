@@ -375,3 +375,82 @@
 .text-red    { color: #f85149 !important; }
 .text-purple { color: #a371f7 !important; }
 .text-muted  { color: #8b949e !important; }
+
+/* ── SKU code colour variants ─────────────────────────────── */
+.sku-code--green {
+  color: #3fb950;
+  background: rgba(63,185,80,0.1);
+}
+
+/* ── Capacity bar fill modifiers ─────────────────────────── */
+.cap-bar-fill--hi  { background: linear-gradient(90deg, #3fb950, #2ea043) !important; }
+.cap-bar-fill--mid { background: linear-gradient(90deg, #f0b429, #e09000) !important; }
+.cap-bar-fill--low { background: linear-gradient(90deg, #f85149, #c62c25) !important; }
+
+/* ── Loading state ────────────────────────────────────────── */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 64px 32px;
+  color: #8b949e;
+  font-size: 14px;
+
+  mat-spinner { --mdc-circular-progress-active-indicator-color: #58a6ff; }
+}
+
+/* ── API error banner ─────────────────────────────────────── */
+.api-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 32px;
+  padding: 12px 18px;
+  background: rgba(248,81,73,0.08);
+  border: 1px solid rgba(248,81,73,0.25);
+  border-radius: 10px;
+  color: #f85149;
+  font-size: 13px;
+  font-weight: 500;
+
+  mat-icon { font-size: 18px !important; width: 18px !important; height: 18px !important; flex-shrink: 0; }
+
+  @media (max-width: 768px) { margin: 0 20px; }
+  @media (max-width: 480px) { margin: 0 16px; font-size: 12px; }
+}
+
+/* ── Empty state ──────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 32px;
+  text-align: center;
+  color: #8b949e;
+
+  mat-icon { font-size: 48px !important; width: 48px !important; height: 48px !important; opacity: 0.35; }
+  h3 { font-size: 16px; font-weight: 600; color: #e6edf3; }
+  p  { font-size: 13px; max-width: 400px; line-height: 1.6; }
+}
+
+/* ── Info panel body ──────────────────────────────────────── */
+.info-panel {
+  .info-panel__body {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 22px;
+    color: #8b949e;
+    font-size: 13px;
+    line-height: 1.6;
+
+    mat-icon { font-size: 18px !important; width: 18px !important; height: 18px !important; flex-shrink: 0; color: #58a6ff; margin-top: 2px; }
+    strong { color: #e6edf3; }
+    em { color: #a371f7; font-style: normal; }
+  }
+}
+

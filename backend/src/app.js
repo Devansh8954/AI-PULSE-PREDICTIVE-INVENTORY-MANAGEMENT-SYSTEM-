@@ -24,12 +24,32 @@ if (process.env.NODE_ENV !== 'test') {
 
 app.use('/api', rateLimiter);
 
-// Health check (no auth required)
+// ── Root index — shows available endpoints ────────────────────────────────────
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    success: true,
+    name:    'AI-Pulse Predictive Inventory API',
+    version: 'v1',
+    health:  '/health',
+    base:    '/api/v1',
+    endpoints: {
+      auth:      { register: 'POST /api/v1/auth/register', login: 'POST /api/v1/auth/login', me: 'GET /api/v1/auth/me' },
+      products:  'GET | POST /api/v1/products',
+      inventory: 'GET | PATCH /api/v1/inventory',
+      vendors:   'GET | POST /api/v1/vendors',
+      signals:   'GET /api/v1/signals',
+      trends:    'GET /api/v1/trends',
+      forecast:  'GET /api/v1/forecast/:productId',
+    },
+  });
+});
+
+// ── Health check (no auth required) ──────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Versioned API
+// ── Versioned API ─────────────────────────────────────────────────────────────
 app.use('/api/v1', router);
 
 // 404 fallback

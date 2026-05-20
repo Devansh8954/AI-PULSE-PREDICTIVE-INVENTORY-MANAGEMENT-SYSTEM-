@@ -22,12 +22,19 @@ const logger = require('../utils/logger');
 
 const {
   DB_HOST     = 'localhost',
-  DB_PORT     = 3306,
+  DB_PORT     = '3306',
   DB_NAME     = 'ai_pulse_db',
   DB_USER     = 'root',
-  DB_PASSWORD = '',
+  DB_PASSWORD,
   NODE_ENV    = 'development',
 } = process.env;
+
+// ── Fail fast: never start without a DB password configured ─────────────────
+if (!DB_PASSWORD) {
+  throw new Error(
+    '❌  DB_PASSWORD is not set. Add it to your .env file (see .env.example).'
+  );
+}
 
 const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
   dialect: 'mysql',

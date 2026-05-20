@@ -23,6 +23,8 @@ const Product       = require('./product.model');
 const Inventory     = require('./inventory.model');
 const Vendor        = require('./vendor.model');
 const TrendSignal   = require('./trendSignal.model');
+const User          = require('./user.model');
+const PurchaseOrder = require('./purchaseOrder.model');
 
 // ── Product ↔ Inventory ──────────────────────────────────────────────────────
 // A product can have multiple inventory records (one per warehouse location).
@@ -64,4 +66,12 @@ TrendSignal.belongsTo(Product, {
   as:         'product',
 });
 
-module.exports = { sequelize, Product, Inventory, Vendor, TrendSignal };
+// ── PurchaseOrder ↔ Vendor ───────────────────────────────────────────────────
+Vendor.hasMany(PurchaseOrder, { foreignKey: 'vendorId', as: 'purchaseOrders' });
+PurchaseOrder.belongsTo(Vendor, { foreignKey: 'vendorId', as: 'vendor' });
+
+// ── PurchaseOrder ↔ User (created by) ────────────────────────────────────────
+User.hasMany(PurchaseOrder, { foreignKey: 'createdBy', as: 'purchaseOrders' });
+PurchaseOrder.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+
+module.exports = { sequelize, Product, Inventory, Vendor, TrendSignal, User, PurchaseOrder };

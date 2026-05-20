@@ -5,8 +5,12 @@ logs/
 node_modules/
 dist/
 
-# Environment files — NEVER commit
+# Environment files — NEVER commit real secrets
 .env
+.env.local
+.env.production
+.env.staging
+# .env.example IS committed intentionally (blank template)
 
 # OS files
 .DS_Store

@@ -16,6 +16,8 @@ import { MatChipsModule }           from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule }        from '@angular/material/snack-bar';
 import { MatTooltipModule }         from '@angular/material/tooltip';
+import { MatSelectModule }          from '@angular/material/select';
+import { FormsModule }              from '@angular/forms';
 
 // ── App files ────────────────────────────────────────────────────────────────
 import { AppRoutingModule }  from './app-routing.module';
@@ -27,6 +29,7 @@ import { DashboardComponent }          from './features/dashboard/dashboard.comp
 import { ManagerDashboardComponent }   from './features/manager-dashboard/manager-dashboard.component';
 import { AnalystDashboardComponent }   from './features/analyst-dashboard/analyst-dashboard.component';
 import { WarehouseDashboardComponent } from './features/warehouse-dashboard/warehouse-dashboard.component';
+import { LoginComponent }              from './features/login/login.component';
 
 // ── Shared Components ─────────────────────────────────────────────────────────
 import { SidebarComponent } from './shared/components/sidebar/sidebar.component';
@@ -43,6 +46,8 @@ import { ShellComponent }   from './shared/components/shell/shell.component';
     ManagerDashboardComponent,
     AnalystDashboardComponent,
     WarehouseDashboardComponent,
+    // Auth
+    LoginComponent,
   ],
   imports: [
     // Angular core
@@ -64,6 +69,8 @@ import { ShellComponent }   from './shared/components/shell/shell.component';
     MatProgressSpinnerModule,
     MatSnackBarModule,
     MatTooltipModule,
+    MatSelectModule,
+    FormsModule,
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },

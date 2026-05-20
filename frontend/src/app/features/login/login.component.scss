@@ -1,0 +1,196 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:host {
+  display: block;
+  height: 100vh;
+}
+
+.login-page {
+  display: flex;
+  height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background: #0d1117;
+}
+
+// ── Left brand panel ──────────────────────────────────────────────────────────
+.brand-panel {
+  flex: 0 0 44%;
+  background: linear-gradient(145deg, #0d1117 0%, #111827 40%, #1a2744 100%);
+  border-right: 1px solid #21262d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  position: relative;
+  overflow: hidden;
+
+  // Glowing accent blob
+  &::before {
+    content: '';
+    position: absolute;
+    top: -120px; left: -120px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(88,166,255,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; right: -80px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(63,185,80,0.10) 0%, transparent 70%);
+    pointer-events: none;
+  }
+}
+
+.brand-content {
+  position: relative;
+  z-index: 1;
+  max-width: 360px;
+}
+
+.brand-logo {
+  width: 64px; height: 64px;
+  background: linear-gradient(135deg, #1f6feb, #388bfd);
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 32px rgba(56,139,253,0.3);
+
+  mat-icon {
+    font-size: 34px; width: 34px; height: 34px;
+    color: #fff;
+  }
+}
+
+.brand-name {
+  font-size: 36px; font-weight: 700;
+  color: #e6edf3;
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
+}
+
+.brand-tagline {
+  font-size: 15px; color: #8b949e;
+  margin: 0 0 40px;
+}
+
+.brand-features {
+  display: flex; flex-direction: column; gap: 18px;
+}
+
+.feature-item {
+  display: flex; align-items: center; gap: 12px;
+  color: #c9d1d9; font-size: 14px;
+
+  mat-icon {
+    font-size: 20px; width: 20px; height: 20px;
+    color: #58a6ff;
+    flex-shrink: 0;
+  }
+}
+
+// ── Right form panel ──────────────────────────────────────────────────────────
+.form-panel {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  padding: 32px;
+  background: #0d1117;
+}
+
+.form-card {
+  width: 100%; max-width: 420px;
+
+  &__header {
+    margin-bottom: 28px;
+    h2 { margin: 0 0 6px; font-size: 26px; font-weight: 600; color: #e6edf3; }
+    p  { margin: 0; font-size: 14px; color: #8b949e; }
+  }
+}
+
+// ── Quick-fill ─────────────────────────────────────────────────────────────────
+.quick-fill {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 24px;
+
+  &__label { font-size: 12px; color: #8b949e; width: 100%; }
+}
+
+.quick-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid #30363d;
+  background: #161b22;
+  color: #c9d1d9;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1; min-width: 90px; justify-content: center;
+
+  mat-icon { font-size: 15px !important; width: 15px !important; height: 15px !important; }
+  &:hover { transform: translateY(-1px); }
+
+  &--admin     { border-color: rgba(210,153,34,0.5);  color: #d29922; &:hover { background: rgba(210,153,34,0.1); } }
+  &--manager   { border-color: rgba(88,166,255,0.5);  color: #58a6ff; &:hover { background: rgba(88,166,255,0.1); } }
+  &--viewer    { border-color: rgba(163,113,247,0.5); color: #a371f7; &:hover { background: rgba(163,113,247,0.1); } }
+  &--warehouse { border-color: rgba(63,185,80,0.5);   color: #3fb950; &:hover { background: rgba(63,185,80,0.1);  } }
+}
+
+// ── Form fields ────────────────────────────────────────────────────────────────
+.full-width { width: 100%; margin-bottom: 8px; }
+
+// ── Error banner ───────────────────────────────────────────────────────────────
+.login-error {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; margin-bottom: 16px;
+  background: rgba(248,81,73,0.1);
+  border: 1px solid rgba(248,81,73,0.3);
+  border-radius: 8px;
+  color: #f85149; font-size: 13px;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+// ── Submit button ─────────────────────────────────────────────────────────────
+.login-btn {
+  width: 100%; height: 48px;
+  font-size: 15px; font-weight: 600;
+  background: linear-gradient(90deg, #1f6feb, #388bfd) !important;
+  color: #fff !important;
+  border-radius: 10px !important;
+  margin-top: 4px;
+  transition: opacity 0.2s, transform 0.15s;
+
+  &:hover:not([disabled]) {
+    opacity: 0.92;
+    transform: translateY(-1px);
+  }
+
+  mat-spinner { margin: 0 auto; }
+}
+
+.seed-hint {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 12px; color: #6e7681;
+
+  code {
+    background: #21262d;
+    padding: 2px 6px; border-radius: 4px;
+    color: #79c0ff; font-size: 11px;
+  }
+}
+
+// ── Responsive ────────────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .login-page { flex-direction: column; }
+  .brand-panel {
+    flex: 0 0 auto;
+    padding: 32px 24px 24px;
+
+    .brand-features { display: none; }
+    .brand-tagline  { margin-bottom: 0; }
+  }
+  .form-panel { padding: 24px 20px; }
+}
