@@ -21,7 +21,16 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-app.use('/api', rateLimiter);
+// Global rate limiter, except for high-traffic product list reads.
+// This prevents 429 on common UI pagination calls like GET /api/v1/products?limit=100.
+app.use('/api', (req, res, next) => {
+  // req.originalUrl example: /api/v1/products?limit=100
+  if (req.method === 'GET' && /^\/api\/v1\/products(\?.*)?$/i.test(req.originalUrl)) {
+    return next();
+  }
+  return rateLimiter(req, res, next);
+});
+
 
 // ── Root index — shows available endpoints ────────────────────────────────────
 app.get('/', (_req, res) => {
