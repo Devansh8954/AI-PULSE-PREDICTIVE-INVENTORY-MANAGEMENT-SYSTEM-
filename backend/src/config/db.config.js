@@ -32,7 +32,7 @@ const {
 // ── Fail fast: never start without a DB password configured ─────────────────
 if (!DB_PASSWORD) {
   throw new Error(
-    '❌  DB_PASSWORD is not set. Add it to your .env file (see .env.example).'
+    '❌  DB_PASSWORD is not set. Add it to your .env file (see .env.example).',
   );
 }
 

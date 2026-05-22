@@ -12,7 +12,6 @@
 
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
-const { Op }   = require('sequelize');
 const User     = require('../models/user.model');
 const AppError = require('../models/errors/AppError');
 const jwtCfg   = require('../config/jwt.config');
@@ -42,7 +41,7 @@ const register = async (req, res, next) => {
     const token = jwt.sign(
       { sub: user.id, name: user.name, email: user.email, role: user.role },
       jwtCfg.secret,
-      { expiresIn: jwtCfg.expiresIn }
+      { expiresIn: jwtCfg.expiresIn },
     );
 
     return res.status(201).json({
@@ -79,7 +78,7 @@ const login = async (req, res, next) => {
     const token = jwt.sign(
       { sub: user.id, name: user.name, email: user.email, role: user.role },
       jwtCfg.secret,
-      { expiresIn: jwtCfg.expiresIn }
+      { expiresIn: jwtCfg.expiresIn },
     );
 
     return res.status(200).json({

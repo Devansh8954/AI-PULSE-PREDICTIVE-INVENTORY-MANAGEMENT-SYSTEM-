@@ -83,7 +83,7 @@ User.init(
       { fields: ['email'] },
       { fields: ['role'] },
     ],
-  }
+  },
 );
 
 module.exports = User;

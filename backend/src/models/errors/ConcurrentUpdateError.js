@@ -42,8 +42,8 @@ class ConcurrentUpdateError extends AppError {
     super(
       `Optimistic lock conflict on inventory '${inventoryId}'. ` +
       `Version ${clientVersion} is stale — another agent updated this record first. ` +
-      `Re-fetch and retry.`,
-      409
+      'Re-fetch and retry.',
+      409,
     );
     this.name    = 'ConcurrentUpdateError';
     this.context = { inventoryId, clientVersion, action };

@@ -20,5 +20,10 @@
       <mat-icon>{{ item.icon }}</mat-icon>
       <span>{{ item.shortLabel }}</span>
     </a>
+    <!-- Mobile logout button -->
+    <a class="mobile-nav__item mobile-nav__item--logout" (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      <span>Sign Out</span>
+    </a>
   </nav>
 </div>

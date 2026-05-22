@@ -9,7 +9,6 @@ const morgan       = require('morgan');
 const router       = require('./routes');
 const errorHandler = require('./middlewares/errorHandler.middleware');
 const rateLimiter  = require('./middlewares/rateLimiter.middleware');
-const logger       = require('./utils/logger');
 
 const app = express();
 

@@ -19,11 +19,11 @@ class AppError extends Error {
    */
   constructor(message, statusCode) {
     super(message);
-    this.statusCode    = statusCode;
-    this.status        = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
-    this.isOperational = true;   // mark as a known, handled error
+    this.name       = this.constructor.name;  // 'AppError', 'NotFoundError', etc.
+    this.statusCode = statusCode;
+    this.status     = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
+    this.isOperational = true;
 
-    // Capture stack trace without including the constructor frame
     Error.captureStackTrace(this, this.constructor);
   }
 }

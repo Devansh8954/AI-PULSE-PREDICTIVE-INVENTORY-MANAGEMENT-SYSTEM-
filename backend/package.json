@@ -7,8 +7,10 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest --runInBand --forceExit",
+    "test:watch": "jest --watch --runInBand",
     "test:coverage": "jest --coverage --runInBand --forceExit",
-    "lint": "eslint src/**/*.js",
+    "lint": "eslint \"src/**/*.js\" \"tests/**/*.js\"",
+    "lint:fix": "eslint \"src/**/*.js\" \"tests/**/*.js\" --fix",
     "db:sync":       "node src/scripts/syncDb.js",
     "db:seed-users": "node src/scripts/seedUsers.js",
     "db:seed-all":   "node src/scripts/seedAll.js",
@@ -38,6 +40,22 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["**/tests/**/*.test.js"]
+    "testMatch": ["**/tests/**/*.test.js"],
+    "collectCoverageFrom": [
+      "src/services/**/*.js",
+      "src/controllers/**/*.js",
+      "src/middlewares/**/*.js",
+      "!src/scripts/**",
+      "!src/config/**"
+    ],
+    "coverageThresholds": {
+      "global": {
+        "lines":     60,
+        "functions": 60,
+        "branches":  50,
+        "statements": 60
+      }
+    },
+    "coverageReporters": ["text", "lcov", "html"]
   }
 }

@@ -270,3 +270,37 @@ JOIN products p ON p.id = i.product_id
 JOIN vendors  v ON v.id = i.vendor_id
 WHERE i.quantity_on_hand <= i.reorder_point
   AND p.is_active = 1;
+
+
+-- =============================================================
+-- TABLE: inventory_audit_log
+-- Immutable stock-movement audit trail.
+-- Written atomically inside the same Sequelize transaction as
+-- each PATCH /api/v1/inventory/:id/adjust call (OCC-guarded).
+-- Never UPDATE or DELETE rows — append-only ledger.
+-- =============================================================
+CREATE TABLE IF NOT EXISTS inventory_audit_log (
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    inventory_id        CHAR(36)        NOT NULL  COMMENT 'FK → inventory.id',
+
+    -- Movement details
+    delta               INT             NOT NULL  COMMENT 'Units added (+) or removed (–)',
+    reason              TEXT            NULL      COMMENT 'Free-text audit reason supplied by caller',
+    updated_by          VARCHAR(150)    NOT NULL  COMMENT 'User id or system identifier',
+
+    -- OCC snapshot for forensic reconstruction
+    snapshot_version    BIGINT UNSIGNED NOT NULL  COMMENT 'Version AFTER the successful update',
+
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    INDEX idx_audit_inventory   (inventory_id),
+    INDEX idx_audit_created_at  (created_at),
+    INDEX idx_audit_updated_by  (updated_by),
+
+    CONSTRAINT fk_audit_inventory
+        FOREIGN KEY (inventory_id) REFERENCES inventory (id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Append-only stock-movement audit ledger. One row per OCC-successful PATCH /adjust call.';
+

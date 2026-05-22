@@ -45,7 +45,7 @@ describe('ProductService', () => {
       const result = await ProductService.getProductById('abc-123');
       expect(result).toEqual(mockProduct);
       expect(Product.findOne).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'abc-123', isActive: true } })
+        expect.objectContaining({ where: { id: 'abc-123', isActive: true } }),
       );
     });
   });
@@ -61,7 +61,7 @@ describe('ProductService', () => {
       Product.findOne.mockResolvedValue(mockProduct);
 
       await expect(
-        ProductService.updateProduct('abc-123', { name: 'New Name', version: 0 })
+        ProductService.updateProduct('abc-123', { name: 'New Name', version: 0 }),
       ).rejects.toThrow(ConflictError);
     });
 

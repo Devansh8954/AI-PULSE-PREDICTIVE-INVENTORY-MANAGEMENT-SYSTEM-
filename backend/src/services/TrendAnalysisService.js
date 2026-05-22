@@ -75,7 +75,7 @@ const getGeminiClient = () => {
   if (!apiKey) {
     throw new AppError(
       'GEMINI_API_KEY is not configured. Add it to your .env file. See .env.example.',
-      503
+      503,
     );
   }
   return new GoogleGenerativeAI(apiKey);
@@ -152,7 +152,7 @@ const callGeminiAI = async (keyword) => {
     logger.error(`[TrendAnalysis] JSON parse failed: ${parseErr.message}`);
     throw new AppError(
       `AI response could not be parsed as valid JSON. Raw: "${rawText.substring(0, 200)}"`,
-      502
+      502,
     );
   }
 
@@ -237,7 +237,7 @@ const persistTrendSignals = async (enrichedProducts, keyword) => {
   expiresAt.setDate(expiresAt.getDate() + SIGNAL_TTL_DAYS);
 
   const actionablePredictions = enrichedProducts.filter(
-    (p) => p.status === 'LOW_STOCK' && p.dbProductId
+    (p) => p.status === 'LOW_STOCK' && p.dbProductId,
   );
 
   if (actionablePredictions.length === 0) {
@@ -246,7 +246,7 @@ const persistTrendSignals = async (enrichedProducts, keyword) => {
   }
 
   logger.info(
-    `[TrendAnalysis] Writing/updating ${actionablePredictions.length} trend signal(s) for low-stock items.`
+    `[TrendAnalysis] Writing/updating ${actionablePredictions.length} trend signal(s) for low-stock items.`,
   );
 
   const upsertPromises = actionablePredictions.map(async (item) => {
@@ -275,7 +275,7 @@ const persistTrendSignals = async (enrichedProducts, keyword) => {
     });
 
     logger.info(
-      `[TrendAnalysis] ${created ? 'Created' : 'Updated'} signal for SKU: ${item.sku} | score: ${item.trendScore}`
+      `[TrendAnalysis] ${created ? 'Created' : 'Updated'} signal for SKU: ${item.sku} | score: ${item.trendScore}`,
     );
 
     return { signal, created };
@@ -335,10 +335,10 @@ const analyzeKeyword = async (keyword) => {
   };
 
   logger.info(
-    `[TrendAnalysis] ── Complete. ` +
+    '[TrendAnalysis] ── Complete. ' +
     `Trending: ${report.summary.totalTrending} | ` +
     `Low-stock alerts: ${report.summary.lowStockAlerts} | ` +
-    `Signals written: ${report.summary.signalsWritten} ──`
+    `Signals written: ${report.summary.signalsWritten} ──`,
   );
 
   return report;

@@ -52,7 +52,7 @@ TrendSignal.init(
         'COMPETITOR_STOCKOUT',
         'PRICE_SENSITIVITY',
         'SOCIAL_BUZZ',
-        'CUSTOM'
+        'CUSTOM',
       ),
       allowNull: false,
       comment:   'Standardized signal category for the scoring engine',
@@ -132,7 +132,7 @@ TrendSignal.init(
       { fields: ['signal_score'] },
       { fields: ['expires_at'] },
     ],
-  }
+  },
 );
 
 module.exports = TrendSignal;

@@ -75,7 +75,7 @@ describe('InventoryService.updateStock — Optimistic Locking', () => {
     });
 
     expect(InventoryRepository.updateStockWithHistory).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'inv-uuid-001', delta: -5, version: 3 })
+      expect.objectContaining({ id: 'inv-uuid-001', delta: -5, version: 3 }),
     );
     expect(result.quantityOnHand).toBe(35);
     expect(result.version).toBe(4);

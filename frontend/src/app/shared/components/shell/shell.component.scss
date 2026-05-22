@@ -75,5 +75,10 @@
       &.mobile-nav__item--purple { color: #a371f7; background: rgba(163,113,247,0.08); }
       &.mobile-nav__item--green  { color: #3fb950; background: rgba(63,185,80,0.08); }
     }
+
+    &--logout {
+      color: #f85149;
+      &:hover { background: rgba(248, 81, 73, 0.1); }
+    }
   }
 }

@@ -4,6 +4,7 @@ logs/
 # Node modules
 node_modules/
 dist/
+coverage/
 
 # Environment files — NEVER commit real secrets
 .env

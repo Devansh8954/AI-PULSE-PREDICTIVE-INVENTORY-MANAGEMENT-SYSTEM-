@@ -16,7 +16,7 @@ const bcrypt = require('bcryptjs');
 
     // Step 1: Update ENUM to include WAREHOUSE
     await sequelize.query(
-      "ALTER TABLE users MODIFY COLUMN role ENUM('ADMIN','MANAGER','WAREHOUSE','VIEWER') NOT NULL DEFAULT 'VIEWER'"
+      "ALTER TABLE users MODIFY COLUMN role ENUM('ADMIN','MANAGER','WAREHOUSE','VIEWER') NOT NULL DEFAULT 'VIEWER'",
     );
     console.log('✅  ENUM updated: ADMIN | MANAGER | WAREHOUSE | VIEWER\n');
 
@@ -35,7 +35,7 @@ const bcrypt = require('bcryptjs');
         `INSERT INTO users (id, name, email, password_hash, role, is_active, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, 1, NOW(), NOW())
          ON DUPLICATE KEY UPDATE role = VALUES(role), is_active = 1, updated_at = NOW()`,
-        { replacements: [u.id, u.name, u.email, hash, u.role], type: QueryTypes.INSERT }
+        { replacements: [u.id, u.name, u.email, hash, u.role], type: QueryTypes.INSERT },
       );
       console.log(`  ✅  [${u.role.padEnd(9)}] ${u.email}`);
     }

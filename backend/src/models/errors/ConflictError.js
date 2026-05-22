@@ -11,7 +11,6 @@ const AppError = require('./AppError');
 class ConflictError extends AppError {
   constructor(message = 'Resource conflict — the record was modified concurrently. Re-fetch and retry.') {
     super(message, 409);
-    this.name = 'ConflictError';
   }
 }
 

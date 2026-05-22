@@ -132,7 +132,7 @@ Product.init(
       { fields: ['is_active'] },
       { fields: ['brand', 'category'] },
     ],
-  }
+  },
 );
 
 module.exports = Product;

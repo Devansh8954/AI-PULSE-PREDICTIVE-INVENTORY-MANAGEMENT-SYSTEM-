@@ -15,12 +15,11 @@
   <!-- Section label -->
   <div class="sidebar__section-label" *ngIf="!collapsed">Dashboards</div>
 
-  <!-- Nav Items -->
+  <!-- Nav Items — filtered by role -->
   <ul class="sidebar__nav">
     <li
       *ngFor="let item of navItems"
       class="sidebar__item"
-      [class.sidebar__item--active]="isActive(item.route)"
       [class]="'sidebar__item sidebar__item--' + item.color + (isActive(item.route) ? ' sidebar__item--active' : '')"
       (click)="navigate(item.route)"
       [matTooltip]="collapsed ? item.label : ''"
@@ -36,6 +35,36 @@
       <div class="sidebar__item-indicator" *ngIf="isActive(item.route)"></div>
     </li>
   </ul>
+
+  <!-- User Profile + Logout -->
+  <div class="sidebar__user" *ngIf="currentUser">
+    <div class="sidebar__user-avatar" [class]="'sidebar__user-avatar--' + roleColor"
+         [matTooltip]="collapsed ? (currentUser.name + ' · ' + roleLabel) : ''">
+      {{ currentUser.name.charAt(0).toUpperCase() }}
+    </div>
+    <div class="sidebar__user-info" *ngIf="!collapsed">
+      <span class="sidebar__user-name">{{ currentUser.name }}</span>
+      <span class="sidebar__user-role sidebar__user-role--{{ roleColor }}">{{ roleLabel }}</span>
+    </div>
+    <button
+      class="sidebar__logout-btn"
+      (click)="logout()"
+      [matTooltip]="'Sign Out'"
+      matTooltipPosition="right"
+      *ngIf="!collapsed">
+      <mat-icon>logout</mat-icon>
+    </button>
+  </div>
+
+  <!-- Collapsed logout -->
+  <button
+    class="sidebar__logout-btn sidebar__logout-btn--solo"
+    *ngIf="collapsed && currentUser"
+    (click)="logout()"
+    matTooltip="Sign Out"
+    matTooltipPosition="right">
+    <mat-icon>logout</mat-icon>
+  </button>
 
   <!-- Footer -->
   <div class="sidebar__footer" *ngIf="!collapsed">

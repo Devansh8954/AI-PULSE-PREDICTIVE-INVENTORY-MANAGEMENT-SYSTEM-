@@ -1,6 +1,6 @@
 import {
   Component, OnInit, ViewChild, ElementRef,
-  AfterViewInit, OnDestroy
+  AfterViewInit, OnDestroy, NgZone
 } from '@angular/core';
 import { Subject, forkJoin, of } from 'rxjs';
 import { takeUntil, catchError, finalize } from 'rxjs/operators';
@@ -18,11 +18,26 @@ export interface ForecastRow {
   category: string;
   currentStock: number;
   predictedDemand: number;
-  depletionDays: number;      // currentStock / avgDailyDemand (est.)
-  confidence: number;         // avgTrendScore × 100
+  depletionDays: number;
+  confidence: number;
   alertLevel: 'CRITICAL' | 'MODERATE' | 'LOW';
   trend: 'up' | 'down' | 'stable';
 }
+
+/** Common Chart.js theme options shared by both charts */
+const CHART_THEME = {
+  tooltip: {
+    backgroundColor: '#1c2333',
+    titleColor: '#e6edf3',
+    bodyColor: '#8b949e',
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    padding: 12,
+  },
+  legend: {
+    labels: { color: '#8b949e', font: { family: 'Inter', size: 12 }, boxWidth: 12 },
+  },
+};
 
 @Component({
   selector: 'app-analyst-dashboard',
@@ -36,42 +51,39 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
 
   private lineChart!: Chart;
   private pieChart!: Chart;
+  private chartsBuilt = false;
   private destroy$ = new Subject<void>();
 
-  // ── State ─────────────────────────────────────────────────────────────────────
+  // ── State ─────────────────────────────────────────────────────────────────
   isLoading      = true;
   apiError       = '';
   forecastRows:  ForecastRow[] = [];
 
-  // ── Computed stats (derived from live data) ───────────────────────────────────
+  // ── Computed stats ────────────────────────────────────────────────────────
   get stats() {
     const rows = this.forecastRows;
-    const criticalCount = rows.filter(r => r.alertLevel === 'CRITICAL').length;
     const avgConf = rows.length
-      ? Math.round(rows.reduce((s, r) => s + r.confidence, 0) / rows.length)
-      : 0;
+      ? Math.round(rows.reduce((s, r) => s + r.confidence, 0) / rows.length) : 0;
     const avgDepletion = rows.length
-      ? Math.round(rows.reduce((s, r) => s + r.depletionDays, 0) / rows.length)
-      : 0;
-    const categories = new Set(rows.map(r => r.category)).size;
-
+      ? Math.round(rows.reduce((s, r) => s + r.depletionDays, 0) / rows.length) : 0;
     return {
-      forecastAccuracy: avgConf,
-      signalsAnalyzed:  rows.length,
-      avgDepletionDays: avgDepletion,
-      categoriesTracked: categories,
+      forecastAccuracy:  avgConf,
+      signalsAnalyzed:   rows.length,
+      avgDepletionDays:  avgDepletion,
+      categoriesTracked: new Set(rows.map(r => r.category)).size,
     };
   }
 
   displayedCols = [
     'sku', 'productName', 'category',
     'currentStock', 'predictedDemand',
-    'depletionDays', 'confidence', 'alertLevel', 'trend'
+    'depletionDays', 'confidence', 'alertLevel', 'trend',
   ];
 
   constructor(
     private inventoryService: InventoryService,
     private forecastService:  ForecastService,
+    private ngZone: NgZone,
   ) {}
 
   ngOnInit(): void {
@@ -79,8 +91,19 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   ngAfterViewInit(): void {
-    this.buildLineChart();
-    this.buildPieChart();
+    // Use 150ms delay to guarantee the canvas element is fully painted
+    // before Chart.js tries to acquire its 2D context.
+    // (setTimeout(0) is not enough on some Angular change-detection cycles.)
+    setTimeout(() => {
+      this.buildLineChart();
+      this.buildPieChart();
+      this.chartsBuilt = true;
+      // Data may have already arrived while we were waiting — render immediately.
+      if (this.forecastRows.length) {
+        this.updateLineChart();
+        this.updatePieChart();
+      }
+    }, 150);
   }
 
   ngOnDestroy(): void {
@@ -94,7 +117,7 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
     this.loadForecastData();
   }
 
-  // ── Data helpers ──────────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
   getTrendIcon(trend: string): string {
     return { up: 'trending_up', down: 'trending_down', stable: 'trending_flat' }[trend] ?? 'trending_flat';
@@ -114,15 +137,8 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
     return { CRITICAL: 'badge--red', MODERATE: 'badge--gold', LOW: 'badge--green' }[level] ?? '';
   }
 
-  // ── Private: load ────────────────────────────────────────────────────────────
+  // ── Data loading ──────────────────────────────────────────────────────────
 
-  /**
-   * Strategy:
-   * 1. Load all products from GET /api/v1/products
-   * 2. For each product, call GET /api/v1/forecast/:id (parallel via forkJoin)
-   * 3. Merge forecast results with inventory data → ForecastRow[]
-   * 4. Update charts with live data
-   */
   private loadForecastData(): void {
     this.isLoading = true;
     this.apiError  = '';
@@ -141,10 +157,9 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
           return;
         }
 
-        // Build parallel forecast calls — one per product
         const forecastCalls = products.map((p: any) =>
           this.forecastService.getForecast(p.id).pipe(
-            catchError(() => of(null)) // skip products with no signals
+            catchError(() => of(null))
           )
         );
 
@@ -158,22 +173,38 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
               products.map((p: any) => [p.id, p])
             );
 
+            // Include ALL products that returned a valid forecast response.
+            // Products with no trend signals still have real stock data
+            // (avgTrendScore=0, alertLevel='LOW') and belong in the charts.
+            // Filtering by signalCount > 0 caused empty charts when signals
+            // hadn't been generated yet for most products.
             this.forecastRows = results
-              .filter((r): r is ForecastResult => r !== null && r.signalCount > 0)
+              .filter((r): r is ForecastResult => r !== null)
               .map(r => this.toForecastRow(r, productMap[r.productId]));
 
-            // Update charts after data is ready and view is initialised
-            this.updateLineChart();
-            this.updatePieChart();
+            // Refresh charts — run inside NgZone so change detection fires.
+            // Also schedule a deferred update in case chartsBuilt is not yet
+            // true (data arrived before AfterViewInit 150ms timer fired).
+            this.ngZone.run(() => {
+              if (this.chartsBuilt) {
+                this.updateLineChart();
+                this.updatePieChart();
+              } else {
+                // Charts not ready yet — wait for AfterViewInit then update
+                setTimeout(() => {
+                  this.updateLineChart();
+                  this.updatePieChart();
+                }, 200);
+              }
+            });
           });
       });
   }
 
   private toForecastRow(forecast: ForecastResult, product: any): ForecastRow {
-    const confidence = Math.round(forecast.avgTrendScore * 100);
-    // Estimated depletion: stock / (predictedDemand / 30 days)
-    const dailyDemand    = forecast.predictedDemand / 30;
-    const depletionDays  = dailyDemand > 0
+    const confidence    = Math.round(forecast.avgTrendScore * 100);
+    const dailyDemand   = forecast.predictedDemand / 30;
+    const depletionDays = dailyDemand > 0
       ? Math.min(Math.round(forecast.currentStock / dailyDemand), 999)
       : 999;
 
@@ -201,42 +232,51 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
     return '⚠️ Could not reach the backend. Make sure the server is running on port 3000.';
   }
 
-  // ── Private: Chart.js (now data-driven) ────────────────────────────────────
+  // ── Chart builders ────────────────────────────────────────────────────────
 
   private buildLineChart(): void {
-    if (!this.lineChartCanvas) return;
+    if (!this.lineChartCanvas?.nativeElement) return;
     const ctx = this.lineChartCanvas.nativeElement.getContext('2d')!;
-    const labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'];
     this.lineChart = new Chart(ctx, {
-      type: 'line',
+      type: 'bar',
       data: {
-        labels,
+        labels: [],
         datasets: [
           {
-            label: 'Current Stock (avg)',
+            label: 'Current Stock',
             data: [],
+            backgroundColor: 'rgba(88,166,255,0.7)',
             borderColor: '#58a6ff',
-            backgroundColor: 'rgba(88,166,255,0.1)',
-            tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#58a6ff',
+            borderWidth: 1,
+            borderRadius: 4,
           },
           {
-            label: 'Predicted Demand (avg)',
+            label: 'Predicted Demand (30d)',
             data: [],
+            backgroundColor: 'rgba(163,113,247,0.7)',
             borderColor: '#a371f7',
-            backgroundColor: 'rgba(163,113,247,0.07)',
-            borderDash: [6, 3], tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#a371f7',
+            borderWidth: 1,
+            borderRadius: 4,
           },
         ],
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-          legend: { labels: { color: '#8b949e', font: { family: 'Inter', size: 12 }, boxWidth: 12 } },
-          tooltip: { backgroundColor: '#1c2333', titleColor: '#e6edf3', bodyColor: '#8b949e', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12 },
+          legend:  { ...CHART_THEME.legend },
+          tooltip: { ...CHART_THEME.tooltip },
         },
         scales: {
-          x: { ticks: { color: '#8b949e' }, grid: { color: 'rgba(255,255,255,0.04)' } },
-          y: { ticks: { color: '#8b949e' }, grid: { color: 'rgba(255,255,255,0.06)' }, beginAtZero: true },
+          x: {
+            ticks: { color: '#8b949e', font: { family: 'Inter', size: 11 } },
+            grid:  { color: 'rgba(255,255,255,0.04)' },
+          },
+          y: {
+            ticks: { color: '#8b949e' },
+            grid:  { color: 'rgba(255,255,255,0.06)' },
+            beginAtZero: true,
+          },
         },
         animation: { duration: 700 },
       },
@@ -245,16 +285,20 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
 
   private updateLineChart(): void {
     if (!this.lineChart || !this.forecastRows.length) return;
-    // Sort top 6 by predicted demand (highest demand products)
-    const top6 = [...this.forecastRows].sort((a, b) => b.predictedDemand - a.predictedDemand).slice(0, 6);
-    this.lineChart.data.labels = top6.map(r => r.productName.length > 14 ? r.productName.slice(0, 14) + '…' : r.productName);
-    this.lineChart.data.datasets[0].data = top6.map(r => r.currentStock);
-    this.lineChart.data.datasets[1].data = top6.map(r => r.predictedDemand);
+    const top8 = [...this.forecastRows]
+      .sort((a, b) => b.predictedDemand - a.predictedDemand)
+      .slice(0, 8);
+
+    this.lineChart.data.labels = top8.map(r =>
+      r.productName.length > 14 ? r.productName.slice(0, 14) + '…' : r.productName
+    );
+    this.lineChart.data.datasets[0].data = top8.map(r => r.currentStock);
+    this.lineChart.data.datasets[1].data = top8.map(r => r.predictedDemand);
     this.lineChart.update();
   }
 
   private buildPieChart(): void {
-    if (!this.pieChartCanvas) return;
+    if (!this.pieChartCanvas?.nativeElement) return;
     const ctx = this.pieChartCanvas.nativeElement.getContext('2d')!;
     this.pieChart = new Chart(ctx, {
       type: 'doughnut',
@@ -263,21 +307,27 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
         datasets: [{
           data: [],
           backgroundColor: [
-            'rgba(88,166,255,0.7)',   // blue
-            'rgba(240,180,41,0.7)',   // gold
-            'rgba(63,185,80,0.7)',    // green
-            'rgba(163,113,247,0.7)', // purple
-            'rgba(248,81,73,0.7)',    // red
-            'rgba(139,148,158,0.5)', // muted
+            'rgba(88,166,255,0.75)',
+            'rgba(240,180,41,0.75)',
+            'rgba(63,185,80,0.75)',
+            'rgba(163,113,247,0.75)',
+            'rgba(248,81,73,0.75)',
+            'rgba(139,148,158,0.5)',
           ],
-          borderColor: '#0d1117', borderWidth: 2,
+          borderColor: '#0d1117',
+          borderWidth: 2,
         }],
       },
       options: {
-        responsive: true, maintainAspectRatio: false, cutout: '65%',
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
         plugins: {
-          legend: { position: 'bottom', labels: { color: '#8b949e', font: { family: 'Inter', size: 11 }, boxWidth: 12, padding: 12 } },
-          tooltip: { backgroundColor: '#1c2333', titleColor: '#e6edf3', bodyColor: '#8b949e', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12 },
+          legend: {
+            position: 'bottom',
+            labels: { color: '#8b949e', font: { family: 'Inter', size: 11 }, boxWidth: 12, padding: 12 },
+          },
+          tooltip: { ...CHART_THEME.tooltip },
         },
         animation: { duration: 700 },
       },
@@ -286,12 +336,13 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
 
   private updatePieChart(): void {
     if (!this.pieChart || !this.forecastRows.length) return;
-    // Group by category and sum predicted demand
     const catMap: Record<string, number> = {};
     this.forecastRows.forEach(r => {
-      catMap[r.category] = (catMap[r.category] ?? 0) + r.predictedDemand;
+      // Normalize missing category (fallback '—') to 'Other'
+      const cat = (r.category && r.category !== '—') ? r.category : 'Other';
+      catMap[cat] = (catMap[cat] ?? 0) + r.predictedDemand;
     });
-    this.pieChart.data.labels = Object.keys(catMap);
+    this.pieChart.data.labels   = Object.keys(catMap);
     this.pieChart.data.datasets[0].data = Object.values(catMap);
     this.pieChart.update();
   }

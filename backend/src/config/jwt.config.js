@@ -9,7 +9,7 @@ if (!secret || secret.length < 32) {
   throw new Error(
     '❌  JWT_SECRET is missing or too short (< 32 chars). ' +
     'Set a strong secret in your .env file (see .env.example).\n' +
-    '   Generate one: node -e "require(\'crypto\').randomBytes(64).toString(\'hex\')"'
+    '   Generate one: node -e "require(\'crypto\').randomBytes(64).toString(\'hex\')"',
   );
 }
 

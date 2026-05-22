@@ -8,22 +8,56 @@ import { ManagerDashboardComponent }   from './features/manager-dashboard/manage
 import { AnalystDashboardComponent }   from './features/analyst-dashboard/analyst-dashboard.component';
 import { WarehouseDashboardComponent } from './features/warehouse-dashboard/warehouse-dashboard.component';
 import { AuthGuard }                   from './core/guards/auth.guard';
+import { RoleGuard }                   from './core/guards/role.guard';
 
 const routes: Routes = [
   // Public routes
   { path: 'login', component: LoginComponent, title: 'AI-Pulse | Sign In' },
 
-  // Protected routes — all require login
+  // Protected routes — all require login + role check
   {
     path: '',
     component: ShellComponent,
     canActivate: [AuthGuard],
     children: [
-      { path: '',           redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard',  component: DashboardComponent,          title: 'AI-Pulse | Admin Command Center' },
-      { path: 'manager',    component: ManagerDashboardComponent,   title: 'AI-Pulse | Manager View' },
-      { path: 'analyst',    component: AnalystDashboardComponent,   title: 'AI-Pulse | Analyst Studio' },
-      { path: 'warehouse',  component: WarehouseDashboardComponent, title: 'AI-Pulse | Warehouse Ops' },
+      // Default redirect based on role is handled by the login/guard
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+
+      // Admin Command Center — ADMIN only
+      {
+        path: 'dashboard',
+        component: DashboardComponent,
+        title: 'AI-Pulse | Admin Command Center',
+        canActivate: [RoleGuard],
+        data: { allowedRoute: '/dashboard' },
+      },
+
+      // Manager View — MANAGER, ADMIN
+      {
+        path: 'manager',
+        component: ManagerDashboardComponent,
+        title: 'AI-Pulse | Manager View',
+        canActivate: [RoleGuard],
+        data: { allowedRoute: '/manager' },
+      },
+
+      // Analyst Studio — VIEWER (analyst), MANAGER, ADMIN
+      {
+        path: 'analyst',
+        component: AnalystDashboardComponent,
+        title: 'AI-Pulse | Analyst Studio',
+        canActivate: [RoleGuard],
+        data: { allowedRoute: '/analyst' },
+      },
+
+      // Warehouse Ops — WAREHOUSE, MANAGER, ADMIN
+      {
+        path: 'warehouse',
+        component: WarehouseDashboardComponent,
+        title: 'AI-Pulse | Warehouse Ops',
+        canActivate: [RoleGuard],
+        data: { allowedRoute: '/warehouse' },
+      },
     ],
   },
 

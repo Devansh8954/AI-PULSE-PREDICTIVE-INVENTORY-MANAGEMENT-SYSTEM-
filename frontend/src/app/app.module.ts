@@ -23,6 +23,7 @@ import { FormsModule }              from '@angular/forms';
 import { AppRoutingModule }  from './app-routing.module';
 import { AppComponent }      from './app.component';
 import { AuthInterceptor }   from './core/interceptors/auth.interceptor';
+import { RoleGuard }         from './core/guards/role.guard';
 
 // ── Feature Components ───────────────────────────────────────────────────────
 import { DashboardComponent }          from './features/dashboard/dashboard.component';
@@ -74,6 +75,7 @@ import { ShellComponent }   from './shared/components/shell/shell.component';
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    RoleGuard,
   ],
   bootstrap: [AppComponent],
 })

@@ -127,7 +127,7 @@ Inventory.init(
       { fields: ['vendor_id'] },
       { fields: ['quantity_on_hand', 'reorder_point'] },
     ],
-  }
+  },
 );
 
 module.exports = Inventory;

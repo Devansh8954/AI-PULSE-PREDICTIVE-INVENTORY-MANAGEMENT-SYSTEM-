@@ -68,7 +68,7 @@ const updateStock = async ({ id, delta, version, reason = 'Manual adjustment', u
           `Stock adjustment rejected: removing ${Math.abs(delta)} units would result in ` +
           `negative stock (current: ${current.quantityOnHand}). ` +
           `Maximum removable: ${current.quantityOnHand} units.`,
-          409
+          409,
         );
       }
     }

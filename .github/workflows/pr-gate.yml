@@ -1,0 +1,100 @@
+name: PR Quality Gate
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+concurrency:
+  group: pr-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Validate PR metadata ───────────────────────────────────────────────────
+  pr-validation:
+    name: 📋 PR Metadata Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate PR title (Conventional Commits)
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            refactor
+            perf
+            style
+            test
+            docs
+            ci
+            chore
+            revert
+          requireScope: false
+          ignoreLabels: |
+            ignore-semantic-pr
+
+      - name: Check for secrets in diff
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+        continue-on-error: true
+
+  # ── Comment bundle size on PR ──────────────────────────────────────────────
+  bundle-size-comment:
+    name: 📦 Bundle Size Report
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Build production bundle
+        run: npm run build -- --configuration production
+
+      - name: Post bundle size comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const files = execSync('find frontend/dist -name "*.js" -o -name "*.css" 2>/dev/null | head -20', { encoding: 'utf8' });
+            const lines = files.trim().split('\n').filter(Boolean);
+            let table = '| File | Size |\n|------|------|\n';
+            for (const f of lines) {
+              try {
+                const size = execSync(`du -sh "${f}"`, { encoding: 'utf8' }).split('\t')[0];
+                const name = f.replace('frontend/dist/', '');
+                table += `| \`${name}\` | ${size} |\n`;
+              } catch {}
+            }
+            const body = `## 📦 Bundle Size Report\n\n${table}\n\n_Generated on commit \`${{ github.sha }}\`_`;
+            const existing = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            const bot = existing.data.find(c => c.body.includes('Bundle Size Report') && c.user.type === 'Bot');
+            if (bot) {
+              await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: bot.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.payload.pull_request.number, body });
+            }

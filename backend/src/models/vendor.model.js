@@ -77,7 +77,7 @@ Vendor.init(
       get() {
         if (this.totalDeliveries === 0) return null;
         return parseFloat(
-          ((this.onTimeDeliveries / this.totalDeliveries) * 100).toFixed(2)
+          ((this.onTimeDeliveries / this.totalDeliveries) * 100).toFixed(2),
         );
       },
     },
@@ -94,7 +94,7 @@ Vendor.init(
     tableName:       'vendors',
     freezeTableName: true,
     indexes: [{ fields: ['is_active'] }],
-  }
+  },
 );
 
 module.exports = Vendor;

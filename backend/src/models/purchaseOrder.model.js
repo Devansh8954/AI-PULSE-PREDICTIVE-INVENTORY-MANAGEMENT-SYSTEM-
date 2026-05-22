@@ -92,7 +92,7 @@ PurchaseOrder.init(
       { fields: ['vendor_id'] },
       { fields: ['created_at'] },
     ],
-  }
+  },
 );
 
 module.exports = PurchaseOrder;

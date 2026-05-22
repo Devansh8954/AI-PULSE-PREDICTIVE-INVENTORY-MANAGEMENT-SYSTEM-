@@ -145,24 +145,6 @@
       </div>
     </section>
 
-    <!-- Info panel: Audit Log note -->
-    <section class="panel mx-page info-panel" *ngIf="warehouseItems.length">
-      <div class="panel__header">
-        <div class="panel__title-row">
-          <mat-icon class="text-gold">receipt_long</mat-icon>
-          <h2 class="panel__title">Audit Trail</h2>
-        </div>
-      </div>
-      <div class="info-panel__body">
-        <mat-icon>info</mat-icon>
-        <p>
-          Detailed stock movement audit logs are written to the backend on every
-          <strong>PATCH /api/v1/inventory/:id/adjust</strong> call using
-          Optimistic Concurrency Control (OCC). Integrate the <em>history</em>
-          table to surface them here in a future sprint.
-        </p>
-      </div>
-    </section>
 
   </ng-container>
 

@@ -1,7 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { takeUntil, catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
 import { InventoryService, InventoryRecord } from '../../core/services/inventory.service';
 
 /** Flattened row for the warehouse table — derived from InventoryRecord */

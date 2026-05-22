@@ -131,7 +131,7 @@ const updateProduct = async (id, dto) => {
     // Sequelize throws OptimisticLockError when version mismatch is detected
     if (err.name === 'SequelizeOptimisticLockError') {
       throw new ConflictError(
-        'Stale version detected — the product was modified by another request. Re-fetch and retry.'
+        'Stale version detected — the product was modified by another request. Re-fetch and retry.',
       );
     }
     throw err;

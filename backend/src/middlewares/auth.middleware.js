@@ -47,8 +47,8 @@ const auth = (allowedRoles = []) => {
       return next(
         new AppError(
           `Access denied. Required roles: [${allowedRoles.join(', ')}]. Your role: ${decoded.role}.`,
-          403
-        )
+          403,
+        ),
       );
     }
 

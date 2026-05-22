@@ -14,7 +14,7 @@ const logger = createLogger({
   format: combine(
     errors({ stack: true }),
     timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    process.env.NODE_ENV === 'production' ? format.json() : combine(colorize(), logFormat)
+    process.env.NODE_ENV === 'production' ? format.json() : combine(colorize(), logFormat),
   ),
   transports: [
     new transports.Console(),

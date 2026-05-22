@@ -9,7 +9,6 @@
  * PATCH /api/v1/purchase-orders/:id/status → update PO status
  */
 
-const { Op }          = require('sequelize');
 const PurchaseOrder   = require('../models/purchaseOrder.model');
 const Vendor          = require('../models/vendor.model');
 const AppError        = require('../models/errors/AppError');

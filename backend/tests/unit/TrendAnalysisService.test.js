@@ -117,7 +117,7 @@ describe('TrendAnalysisService.analyzeKeyword', () => {
         signalType:   'DEMAND_SPIKE',
         keyword:      'Winter coming',
       }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
