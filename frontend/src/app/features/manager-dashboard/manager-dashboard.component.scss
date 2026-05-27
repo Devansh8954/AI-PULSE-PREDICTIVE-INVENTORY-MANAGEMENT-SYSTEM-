@@ -26,6 +26,9 @@
   border-radius: 8px;
   color: #f85149;
   font-size: 14px;
+
+  &--dismissible { justify-content: space-between; }
+  .dismiss-btn { margin-left: auto; color: #f85149; }
 }
 
 .empty-state {
@@ -35,11 +38,171 @@
   p { margin: 0; font-size: 14px; }
 }
 
-// ── Modal ─────────────────────────────────────────────────────────────────────
+// ── PO Lifecycle Legend ───────────────────────────────────────────────────────
+.po-legend {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 8px; padding: 12px 20px 4px;
+  font-size: 12px;
+
+  .legend-step { display: flex; align-items: center; }
+
+  .legend-arrow {
+    font-size: 16px; width: 16px; height: 16px;
+    color: #484f58;
+  }
+
+  .legend-divider {
+    color: #30363d; padding: 0 4px; font-size: 18px; font-weight: 200;
+  }
+
+  .badge {
+    font-size: 11px; padding: 3px 8px; height: auto;
+    mat-icon { font-size: 12px; width: 12px; height: 12px; }
+  }
+}
+
+// ── PO Table Actions ──────────────────────────────────────────────────────────
+.actions-cell {
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+
+.action-btn {
+  height: 32px; line-height: 32px;
+  padding: 0 10px; font-size: 12px;
+  display: inline-flex; align-items: center; gap: 4px;
+  border-radius: 6px !important;
+  transition: all 0.2s ease;
+
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  .action-btn__label { display: inline; }
+
+  &--approve {
+    border-color: rgba(88,166,255,0.4) !important;
+    color: #58a6ff !important;
+    &:hover {
+      background: rgba(88,166,255,0.1) !important;
+      border-color: #58a6ff !important;
+    }
+  }
+}
+
+.action-btn--cancel {
+  color: #8b949e;
+  width: 32px; height: 32px;
+  transition: color 0.2s;
+  mat-icon { font-size: 18px; }
+  &:hover { color: #f85149; }
+}
+
+.terminal-chip {
+  font-size: 12px;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+
+  &--success { background: rgba(63,185,80,0.1);  border: 1px solid rgba(63,185,80,0.3);  color: #3fb950; }
+  &--danger  { background: rgba(248,81,73,0.1);  border: 1px solid rgba(248,81,73,0.3);  color: #f85149; }
+}
+
+.awaiting-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: #58a6ff;
+  padding: 3px 10px;
+  background: rgba(88,166,255,0.08);
+  border: 1px solid rgba(88,166,255,0.2);
+  border-radius: 20px;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+}
+
+.intransit-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: #a371f7;
+  padding: 3px 10px;
+  background: rgba(163,113,247,0.08);
+  border: 1px solid rgba(163,113,247,0.2);
+  border-radius: 20px;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+}
+
+// ── Workflow ownership banner ─────────────────────────────────────────────────
+.workflow-banner {
+  display: flex; align-items: center; gap: 16px;
+  margin: 4px 20px 12px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+.workflow-handoff {
+  color: #484f58; font-size: 24px;
+  width: 24px; height: 24px;
+  flex-shrink: 0;
+}
+
+.workflow-step {
+  display: flex; align-items: flex-start; gap: 12px;
+  flex: 1; min-width: 220px;
+
+  &__icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(88,166,255,0.1); color: #58a6ff;
+    flex-shrink: 0;
+    mat-icon { font-size: 20px; }
+
+    &--green { background: rgba(63,185,80,0.1); color: #3fb950; }
+  }
+
+  &__body {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  &__role {
+    font-size: 13px; font-weight: 600; color: #e6edf3;
+  }
+
+  &__actions {
+    font-size: 11px; color: #8b949e;
+  }
+
+  &__badges {
+    display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 4px;
+
+    .badge { font-size: 11px; padding: 2px 7px; height: auto;
+      mat-icon { font-size: 11px; width: 11px; height: 11px; } }
+  }
+
+  &--active .workflow-step__role { color: #58a6ff; }
+}
+
+.badge-arrow { font-size: 14px; width: 14px; height: 14px; color: #484f58; }
+
+.row-spinner { display: inline-block; }
+
+.row--updating {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+// badge--purple (DISPATCHED)
+.badge--purple {
+  background: rgba(163,113,247,0.12);
+  border: 1px solid rgba(163,113,247,0.3);
+  color: #a371f7;
+}
+
+// ── Modals ────────────────────────────────────────────────────────────────────
 .modal-backdrop {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.55);
   z-index: 999;
+
+  &--confirm { z-index: 1001; }
 }
 
 .modal-panel {
@@ -55,6 +218,14 @@
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+
+  // Confirmation modal — smaller, centred content
+  &--confirm {
+    z-index: 1002;
+    width: min(440px, 94vw);
+    text-align: center;
+    padding: 36px 32px 28px;
+  }
 }
 
 .modal-header {
@@ -63,6 +234,55 @@
   h2 { flex: 1; margin: 0; font-size: 18px; color: #e6edf3; }
 }
 
+// ── Confirm modal internals ───────────────────────────────────────────────────
+.confirm-icon {
+  width: 60px; height: 60px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+
+  mat-icon { font-size: 30px; width: 30px; height: 30px; }
+
+  &--danger  { background: rgba(248,81,73,0.12);  color: #f85149; border: 1px solid rgba(248,81,73,0.3); }
+  &--success { background: rgba(88,166,255,0.12); color: #58a6ff; border: 1px solid rgba(88,166,255,0.3); }
+}
+
+.confirm-title {
+  font-size: 18px; color: #e6edf3;
+  margin: 0 0 10px;
+}
+
+.confirm-body {
+  font-size: 14px; color: #8b949e; line-height: 1.6;
+  margin: 0 0 20px;
+}
+
+.confirm-flow {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin-bottom: 24px;
+
+  .flow-arrow { color: #484f58; }
+}
+
+.confirm-actions {
+  display: flex; justify-content: center; gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid #30363d;
+}
+
+.btn-success {
+  background: #1a7f37 !important;
+  color: #fff !important;
+  &:hover { background: #238636 !important; }
+}
+
+.btn-danger {
+  background: rgba(248,81,73,0.15) !important;
+  border: 1px solid rgba(248,81,73,0.4) !important;
+  color: #f85149 !important;
+  &:hover { background: rgba(248,81,73,0.25) !important; }
+}
+
+// ── PO form helpers ───────────────────────────────────────────────────────────
 .form-row { margin-bottom: 16px; }
 .two-col  { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .full-width { width: 100%; }
@@ -90,4 +310,3 @@
 
 .btn-sm { font-size: 13px; height: 36px; }
 .form-error { color: #f85149; font-size: 13px; margin: 8px 0; }
-

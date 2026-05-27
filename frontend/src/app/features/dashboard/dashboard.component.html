@@ -14,6 +14,7 @@
     </div>
 
     <div class="topbar__actions">
+      <span class="role-badge role-badge--gold">ADMIN</span>
       <div class="topbar__status-dot" [class.pulse]="!(isLoading$ | async)"></div>
       <span class="topbar__status-text">
         {{ (isLoading$ | async) ? 'Fetching...' : 'Live' }}
@@ -128,11 +129,33 @@
           <h2 class="panel__title">Live Trend Signals</h2>
         </div>
 
-        <!-- Table search filter -->
-        <mat-form-field appearance="outline" class="table-filter">
-          <mat-icon matPrefix>filter_list</mat-icon>
-          <input matInput [formControl]="filterControl" placeholder="Filter table…" />
-        </mat-form-field>
+        <div class="table-actions">
+          <!-- Signal type quick-filter pills -->
+          <div class="type-filters">
+            <button *ngFor="let f of signalTypeFilters"
+                    mat-stroked-button
+                    class="type-filter-btn"
+                    [class.type-filter-btn--active]="activeTypeFilter === f.value"
+                    (click)="setTypeFilter(f.value)">
+              {{ f.label }}
+            </button>
+          </div>
+
+          <!-- Text search -->
+          <mat-form-field appearance="outline" class="table-filter">
+            <mat-icon matPrefix>search</mat-icon>
+            <input matInput [formControl]="filterControl" placeholder="Search signals…" />
+          </mat-form-field>
+
+          <!-- Export CSV -->
+          <button mat-stroked-button class="export-btn"
+                  (click)="exportCSV()"
+                  [disabled]="dataSource.data.length === 0"
+                  matTooltip="Export visible rows as CSV">
+            <mat-icon>download</mat-icon>
+            Export CSV
+          </button>
+        </div>
       </div>
 
       <!-- Loading overlay -->

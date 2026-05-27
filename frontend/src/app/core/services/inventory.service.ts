@@ -103,6 +103,15 @@ export class InventoryService {
     );
   }
 
+  // ── Update PO status: PATCH /api/v1/purchase-orders/:id/status ────────────
+  updatePOStatus(id: string, status: PurchaseOrder['status']): Observable<PurchaseOrder> {
+    return this.http.patch<any>(`${this.base}/purchase-orders/${id}/status`, { status }).pipe(
+      map(res => res.data),
+      tap(() => this.loadPurchaseOrders()), // refresh list after status change
+      catchError(err => { console.error('[InventoryService] update PO status error', err); return throwError(() => err); })
+    );
+  }
+
   // ── Get vendors for the PO form dropdown ───────────────────────────────────
   getVendors(): Observable<any[]> {
     return this.http.get<any>(`${this.base}/vendors`).pipe(
@@ -114,6 +123,15 @@ export class InventoryService {
   getProducts(): Observable<any[]> {
     return this.http.get<any>(`${this.base}/products`).pipe(
       map(res => res.data ?? [])
+    );
+  }
+
+  // ── Load ALL purchase orders as Observable (used by Warehouse dashboard) ────────
+  loadAllPurchaseOrders(limit = 50): Observable<PurchaseOrder[]> {
+    const params = new HttpParams().set('limit', limit.toString());
+    return this.http.get<any>(`${this.base}/purchase-orders`, { params }).pipe(
+      map(res => res.data ?? []),
+      catchError(err => { console.error('[InventoryService] all PO error', err); return throwError(() => err); })
     );
   }
 

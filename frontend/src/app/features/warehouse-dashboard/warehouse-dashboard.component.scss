@@ -45,3 +45,148 @@
   background: rgba(63,185,80,0.1) !important;
 }
 
+/* ── PO stats chips ──────────────────────────────────────────────────────────── */
+.po-stat-chips {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+
+.po-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; padding: 4px 10px;
+  border-radius: 20px;
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+
+  &--blue   { background: rgba(88,166,255,0.1);  border: 1px solid rgba(88,166,255,0.25);  color: #58a6ff; }
+  &--purple { background: rgba(163,113,247,0.1); border: 1px solid rgba(163,113,247,0.25); color: #a371f7; }
+}
+
+/* ── Role scope strip ────────────────────────────────────────────────────────── */
+.role-scope-strip {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin: 0 20px 8px;
+  padding: 10px 14px;
+  background: rgba(63,185,80,0.05);
+  border: 1px solid rgba(63,185,80,0.15);
+  border-radius: 8px;
+  font-size: 13px; color: #8b949e; line-height: 1.5;
+
+  mat-icon { color: #3fb950; font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+  strong { color: #3fb950; }
+  em { color: #e6edf3; font-style: normal; font-weight: 500; }
+}
+
+/* ── Warehouse action buttons ────────────────────────────────────────────────── */
+.wh-action-btn {
+  height: 32px; line-height: 32px;
+  padding: 0 10px; font-size: 12px;
+  display: inline-flex; align-items: center; gap: 4px;
+  border-radius: 6px !important;
+  transition: all 0.2s ease;
+
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+
+  &--dispatch {
+    border-color: rgba(163,113,247,0.4) !important;
+    color: #a371f7 !important;
+    &:hover { background: rgba(163,113,247,0.1) !important; border-color: #a371f7 !important; }
+  }
+
+  &--receive {
+    border-color: rgba(63,185,80,0.4) !important;
+    color: #3fb950 !important;
+    &:hover { background: rgba(63,185,80,0.1) !important; border-color: #3fb950 !important; }
+  }
+}
+
+.actions-cell { display: flex; align-items: center; gap: 6px; }
+.row-spinner  { display: inline-block; }
+.row--updating { opacity: 0.6; pointer-events: none; }
+
+/* ── Badge variants ──────────────────────────────────────────────────────────── */
+.badge--purple {
+  background: rgba(163,113,247,0.12);
+  border: 1px solid rgba(163,113,247,0.3);
+  color: #a371f7;
+}
+
+.stat-card--purple {
+  border-color: rgba(163,113,247,0.2);
+  .stat-card__icon { background: rgba(163,113,247,0.1); color: #a371f7; }
+  .stat-card__value { color: #a371f7; }
+}
+
+/* ── Error banner ────────────────────────────────────────────────────────────── */
+.api-error-banner {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 24px 16px;
+  padding: 12px 16px;
+  background: rgba(248,81,73,0.1);
+  border: 1px solid rgba(248,81,73,0.3);
+  border-radius: 8px;
+  color: #f85149; font-size: 14px;
+
+  &--dismissible { justify-content: space-between; }
+  .dismiss-btn { margin-left: auto; color: #f85149; }
+}
+
+/* ── Warehouse confirm modal ─────────────────────────────────────────────────── */
+.wh-modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55); z-index: 999;
+}
+
+.wh-modal-panel {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 36px 32px 28px;
+  width: min(440px, 94vw);
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+
+.confirm-icon {
+  width: 60px; height: 60px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+  mat-icon { font-size: 30px; width: 30px; height: 30px; }
+
+  &--purple { background: rgba(163,113,247,0.12); color: #a371f7; border: 1px solid rgba(163,113,247,0.3); }
+  &--green  { background: rgba(63,185,80,0.12);   color: #3fb950; border: 1px solid rgba(63,185,80,0.3); }
+}
+
+.confirm-title {
+  font-size: 18px; color: #e6edf3; margin: 0 0 10px;
+}
+
+.confirm-body {
+  font-size: 14px; color: #8b949e; line-height: 1.6; margin: 0 0 20px;
+}
+
+.confirm-flow {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-bottom: 24px;
+  .flow-arrow { color: #484f58; }
+}
+
+.confirm-actions {
+  display: flex; justify-content: center; gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid #30363d;
+}
+
+.btn-dispatch {
+  background: rgba(163,113,247,0.15) !important;
+  border: 1px solid rgba(163,113,247,0.4) !important;
+  color: #a371f7 !important;
+  &:hover { background: rgba(163,113,247,0.25) !important; }
+}
+
+.btn-receive {
+  background: #1a7f37 !important;
+  color: #fff !important;
+  &:hover { background: #238636 !important; }
+}

@@ -14,7 +14,7 @@
     </div>
   </header>
 
-  <!-- Stats (live from API) -->
+  <!-- Stats -->
   <section class="stats-row">
     <div class="stat-card stat-card--blue">
       <div class="stat-card__icon"><mat-icon>inventory_2</mat-icon></div>
@@ -52,7 +52,16 @@
     <span>{{ apiError }}</span>
   </div>
 
-  <!-- Stock Alerts Table (live from /api/v1/inventory?lowStock=true) -->
+  <!-- Status-update inline error -->
+  <div *ngIf="statusError" class="api-error-banner api-error-banner--dismissible">
+    <mat-icon>warning_amber</mat-icon>
+    <span>{{ statusError }}</span>
+    <button mat-icon-button (click)="statusError = ''" class="dismiss-btn">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Stock Alerts Table -->
   <section class="panel mx-page">
     <div class="panel__header">
       <div class="panel__title-row">
@@ -115,7 +124,7 @@
     </div>
   </section>
 
-  <!-- Purchase Orders Table (live from /api/v1/purchase-orders) -->
+  <!-- Purchase Orders Table -->
   <section class="panel mx-page">
     <div class="panel__header">
       <div class="panel__title-row">
@@ -125,6 +134,35 @@
       <button mat-flat-button type="button" class="btn-primary-sm" (click)="openNewPO()">
         <mat-icon>add</mat-icon> New PO
       </button>
+    </div>
+
+    <!-- Workflow ownership banner -->
+    <div class="workflow-banner">
+      <div class="workflow-step workflow-step--active">
+        <div class="workflow-step__icon"><mat-icon>manage_accounts</mat-icon></div>
+        <div class="workflow-step__body">
+          <span class="workflow-step__role">Manager</span>
+          <span class="workflow-step__actions">Create · Approve · Cancel</span>
+          <div class="workflow-step__badges">
+            <span class="badge badge--gold"><mat-icon>schedule</mat-icon>Pending</span>
+            <mat-icon class="badge-arrow">east</mat-icon>
+            <span class="badge badge--blue"><mat-icon>thumb_up</mat-icon>Approved</span>
+          </div>
+        </div>
+      </div>
+      <mat-icon class="workflow-handoff">double_arrow</mat-icon>
+      <div class="workflow-step">
+        <div class="workflow-step__icon workflow-step__icon--green"><mat-icon>warehouse</mat-icon></div>
+        <div class="workflow-step__body">
+          <span class="workflow-step__role">Warehouse</span>
+          <span class="workflow-step__actions">Dispatch · Receive</span>
+          <div class="workflow-step__badges">
+            <span class="badge badge--purple"><mat-icon>local_shipping</mat-icon>Dispatched</span>
+            <mat-icon class="badge-arrow">east</mat-icon>
+            <span class="badge badge--green"><mat-icon>inventory</mat-icon>Received</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div *ngIf="loadingOrders" class="loading-row">
@@ -139,42 +177,96 @@
 
     <div class="table-wrapper" *ngIf="!loadingOrders && purchaseOrders.length > 0">
       <table mat-table [dataSource]="purchaseOrders" class="data-table">
+
         <ng-container matColumnDef="poNumber">
           <th mat-header-cell *matHeaderCellDef>PO Number</th>
           <td mat-cell *matCellDef="let row"><code class="sku-code">{{ row.poNumber }}</code></td>
         </ng-container>
+
         <ng-container matColumnDef="vendor">
           <th mat-header-cell *matHeaderCellDef>Vendor</th>
           <td mat-cell *matCellDef="let row"><span class="fw-medium">{{ row.vendor?.name ?? row.vendorId }}</span></td>
         </ng-container>
+
         <ng-container matColumnDef="totalUnits">
           <th mat-header-cell *matHeaderCellDef>Total Units</th>
           <td mat-cell *matCellDef="let row" class="text-blue fw-bold">{{ row.totalUnits }}</td>
         </ng-container>
+
         <ng-container matColumnDef="totalCost">
           <th mat-header-cell *matHeaderCellDef>Total Cost</th>
           <td mat-cell *matCellDef="let row">₹ {{ row.totalCost | number:'1.2-2' }}</td>
         </ng-container>
+
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>Status</th>
           <td mat-cell *matCellDef="let row">
-            <span class="badge" [ngClass]="getStatusClass(row.status)">
+            <mat-spinner *ngIf="updatingPOId === row.id" diameter="20" class="row-spinner"></mat-spinner>
+            <span *ngIf="updatingPOId !== row.id" class="badge" [ngClass]="getStatusClass(row.status)">
               <mat-icon>{{ getStatusIcon(row.status) }}</mat-icon>
               {{ row.status | titlecase }}
             </span>
           </td>
         </ng-container>
+
         <ng-container matColumnDef="createdAt">
           <th mat-header-cell *matHeaderCellDef>Created</th>
           <td mat-cell *matCellDef="let row" class="text-muted">{{ row.createdAt | date:'dd MMM, HH:mm' }}</td>
         </ng-container>
+
+        <!-- ── Manager Actions: Approve + Cancel only ──────────────────────── -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let row" class="actions-cell">
+
+            <!-- Approve button — PENDING → APPROVED -->
+            <button *ngIf="canApprove(row) && updatingPOId !== row.id"
+                    mat-stroked-button
+                    class="action-btn action-btn--approve"
+                    (click)="openApproveConfirm(row)"
+                    matTooltip="Approve this PO and send to Warehouse">
+              <mat-icon>thumb_up</mat-icon>
+              <span class="action-btn__label">Approve</span>
+            </button>
+
+            <!-- Cancel button -->
+            <button *ngIf="canCancel(row) && updatingPOId !== row.id"
+                    mat-icon-button
+                    class="action-btn--cancel"
+                    (click)="openCancelConfirm(row)"
+                    matTooltip="Cancel this PO">
+              <mat-icon>cancel</mat-icon>
+            </button>
+
+            <!-- Awaiting Warehouse chip for APPROVED POs -->
+            <span *ngIf="row.status === 'APPROVED' && updatingPOId !== row.id" class="awaiting-chip">
+              <mat-icon>local_shipping</mat-icon> Awaiting Dispatch
+            </span>
+
+            <!-- In-transit chip for DISPATCHED -->
+            <span *ngIf="row.status === 'DISPATCHED' && updatingPOId !== row.id" class="intransit-chip">
+              <mat-icon>local_shipping</mat-icon> In Transit
+            </span>
+
+            <!-- Terminal chips -->
+            <span *ngIf="row.status === 'RECEIVED' && updatingPOId !== row.id" class="terminal-chip terminal-chip--success">
+              <mat-icon>check_circle</mat-icon> Complete
+            </span>
+            <span *ngIf="row.status === 'CANCELLED' && updatingPOId !== row.id" class="terminal-chip terminal-chip--danger">
+              <mat-icon>cancel</mat-icon> Cancelled
+            </span>
+
+          </td>
+        </ng-container>
+
         <tr mat-header-row *matHeaderRowDef="displayedPOCols"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedPOCols;"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedPOCols;"
+            [class.row--updating]="updatingPOId === row.id"></tr>
       </table>
     </div>
   </section>
 
-  <!-- ── New PO Modal Form ─────────────────────────────────────────────────── -->
+  <!-- ── New PO Modal ───────────────────────────────────────────────────────── -->
   <div class="modal-backdrop" *ngIf="showPOForm" (click)="cancelPO()"></div>
   <form class="modal-panel" *ngIf="showPOForm" [formGroup]="poForm" (ngSubmit)="submitPO()">
 
@@ -184,7 +276,6 @@
       <button mat-icon-button type="button" (click)="cancelPO()"><mat-icon>close</mat-icon></button>
     </div>
 
-    <!-- Vendor -->
     <div class="form-row">
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Vendor</mat-label>
@@ -194,7 +285,6 @@
       </mat-form-field>
     </div>
 
-    <!-- Line Items -->
     <div class="line-items-header">
       <span class="fw-medium">Line Items</span>
       <button mat-stroked-button type="button" class="btn-sm" (click)="addLineItem()">
@@ -205,24 +295,20 @@
     <div formArrayName="lineItems">
       <div *ngFor="let item of lineItems.controls; let i = index"
            [formGroupName]="i" class="line-item-row">
-
         <mat-form-field appearance="outline" class="flex-grow">
           <mat-label>Product</mat-label>
           <mat-select formControlName="productId">
             <mat-option *ngFor="let p of products" [value]="p.id">{{ p.name }} ({{ p.sku }})</mat-option>
           </mat-select>
         </mat-form-field>
-
         <mat-form-field appearance="outline" class="qty-field">
           <mat-label>Qty</mat-label>
           <input matInput type="number" formControlName="quantity" min="1" />
         </mat-form-field>
-
         <mat-form-field appearance="outline" class="cost-field">
           <mat-label>Unit Cost (₹)</mat-label>
           <input matInput type="number" formControlName="unitCost" min="0" />
         </mat-form-field>
-
         <button mat-icon-button type="button" color="warn"
                 (click)="removeLineItem(i)" [disabled]="lineItems.length === 1">
           <mat-icon>delete</mat-icon>
@@ -230,23 +316,19 @@
       </div>
     </div>
 
-    <!-- Notes & Delivery Date -->
     <div class="form-row two-col">
       <mat-form-field appearance="outline">
         <mat-label>Expected Delivery Date</mat-label>
         <input matInput type="date" formControlName="expectedDeliveryDate" />
       </mat-form-field>
-
       <mat-form-field appearance="outline">
         <mat-label>Notes</mat-label>
         <textarea matInput formControlName="notes" rows="2"></textarea>
       </mat-form-field>
     </div>
 
-    <!-- Error -->
     <p class="form-error" *ngIf="poError">{{ poError }}</p>
 
-    <!-- Actions -->
     <div class="modal-actions">
       <button mat-stroked-button type="button" (click)="cancelPO()">Cancel</button>
       <button mat-flat-button type="submit" color="primary" [disabled]="submittingPO">
@@ -255,5 +337,34 @@
       </button>
     </div>
   </form>
+
+  <!-- ── Confirm Modal ──────────────────────────────────────────────────────── -->
+  <div class="modal-backdrop modal-backdrop--confirm" *ngIf="confirmPO" (click)="closeConfirm()"></div>
+  <div class="modal-panel modal-panel--confirm" *ngIf="confirmPO">
+
+    <div class="confirm-icon"
+         [class.confirm-icon--success]="confirmAction === 'approve'"
+         [class.confirm-icon--danger]="confirmAction === 'cancel'">
+      <mat-icon>{{ confirmAction === 'approve' ? 'thumb_up' : 'cancel' }}</mat-icon>
+    </div>
+
+    <h2 class="confirm-title">{{ confirmTitle }}</h2>
+    <p class="confirm-body">{{ confirmBody }}</p>
+
+    <div class="confirm-flow" *ngIf="confirmAction === 'approve'">
+      <span class="badge badge--gold"><mat-icon>schedule</mat-icon>Pending</span>
+      <mat-icon class="flow-arrow">east</mat-icon>
+      <span class="badge badge--blue"><mat-icon>thumb_up</mat-icon>Approved</span>
+      <mat-icon class="flow-arrow">east</mat-icon>
+      <span class="badge badge--muted"><mat-icon>warehouse</mat-icon>Warehouse acts next</span>
+    </div>
+
+    <div class="confirm-actions">
+      <button mat-stroked-button (click)="closeConfirm()">Go Back</button>
+      <button mat-flat-button [ngClass]="confirmBtnClass" (click)="executeStatusChange()">
+        {{ confirmBtnLabel }}
+      </button>
+    </div>
+  </div>
 
 </div>

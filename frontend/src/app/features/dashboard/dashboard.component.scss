@@ -392,7 +392,74 @@
   }
 }
 
-/* ── Table panel ──────────────────────────────────────── */
+/* ── Table actions toolbar ──────────────────────────────────── */
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.type-filters {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.type-filter-btn {
+  height: 30px !important;
+  font-size: 11px !important;
+  padding: 0 10px !important;
+  border-radius: 20px !important;
+  border-color: rgba(255,255,255,0.1) !important;
+  color: #8b949e !important;
+  min-width: unset !important;
+  line-height: 1 !important;
+  transition: all 0.15s ease !important;
+
+  &--active {
+    background: rgba(240,180,41,0.12) !important;
+    border-color: rgba(240,180,41,0.4) !important;
+    color: #f0b429 !important;
+  }
+
+  &:hover:not(.type-filter-btn--active) {
+    border-color: rgba(255,255,255,0.25) !important;
+    color: #e6edf3 !important;
+  }
+}
+
+.export-btn {
+  height: 30px !important;
+  font-size: 11px !important;
+  padding: 0 10px !important;
+  border-radius: 6px !important;
+  border-color: rgba(63,185,80,0.3) !important;
+  color: #3fb950 !important;
+  white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 4px;
+  mat-icon { font-size: 14px !important; width: 14px !important; height: 14px !important; }
+  &:hover { background: rgba(63,185,80,0.08) !important; }
+  &:disabled { opacity: 0.35 !important; }
+}
+
+/* ── Role badge (gold for Admin) ────────────────────────────── */
+.role-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+
+  &--gold {
+    background: rgba(240,180,41,0.12);
+    border: 1px solid rgba(240,180,41,0.3);
+    color: #f0b429;
+  }
+}
+
+/* ── Table filter ─────────────────────────────────────────── */
 .table-filter {
   width: 200px;
 

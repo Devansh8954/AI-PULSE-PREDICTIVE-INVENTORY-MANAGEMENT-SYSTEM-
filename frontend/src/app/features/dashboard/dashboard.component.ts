@@ -61,6 +61,23 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // ── Set filter predicate BEFORE subscribing to valueChanges ──────────────
+    // Moving this here (rather than ngAfterViewInit) ensures the predicate
+    // is active from the very first keystroke.
+    this.dataSource.filterPredicate = (row: DashboardRow, filter: string) => {
+      const parts = filter.split('|');
+      const textFilter = parts[0] ?? '';
+      const typeFilter = parts[1] ?? '';
+
+      const textMatch = !textFilter ||
+        [row.sku, row.productName, row.category, row.reason, row.signalType]
+          .join(' ').toLowerCase().includes(textFilter);
+
+      const typeMatch = !typeFilter || row.signalType === typeFilter;
+
+      return textMatch && typeMatch;
+    };
+
     // Subscribe to the signals stream and push into the Material DataSource
     this.trendService.signals$
       .pipe(takeUntil(this.destroy$))
@@ -77,9 +94,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         distinctUntilChanged(),
         takeUntil(this.destroy$)
       )
-      .subscribe(value => {
-        this.dataSource.filter = (value ?? '').trim().toLowerCase();
-      });
+      .subscribe(() => this.applyFilter());
 
     // Initial data load
     this.trendService.loadSignals();
@@ -99,12 +114,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     };
 
-    // Custom filter predicate — searches across sku, name, category, reason
-    this.dataSource.filterPredicate = (row: DashboardRow, filter: string) =>
-      [row.sku, row.productName, row.category, row.reason, row.signalType]
-        .join(' ').toLowerCase()
-        .includes(filter);
-
     // Build the chart canvas (empty, will populate on data load)
     this.initChart();
   }
@@ -116,6 +125,53 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ── Public Actions ──────────────────────────────────────────────────────────
+
+  /** Active signal type filter ('' = all) */
+  activeTypeFilter = '';
+
+  /** Available quick-filter signal types */
+  readonly signalTypeFilters = [
+    { label: 'All',           value: '' },
+    { label: 'Demand Surge',  value: 'DEMAND_SURGE' },
+    { label: 'Supply Shock',  value: 'SUPPLY_SHOCK' },
+    { label: 'Seasonal',      value: 'SEASONAL' },
+    { label: 'Trend Spike',   value: 'TREND_SPIKE' },
+  ];
+
+  setTypeFilter(value: string): void {
+    this.activeTypeFilter = value;
+    this.applyFilter();
+  }
+
+  private applyFilter(): void {
+    const text = (this.filterControl.value ?? '').trim().toLowerCase();
+    this.dataSource.filter = `${text}|${this.activeTypeFilter}`;
+  }
+
+  /** Export visible table rows as CSV */
+  exportCSV(): void {
+    const rows = this.dataSource.filteredData;
+    if (!rows.length) { this.showSnack('No data to export.', 'snack-error'); return; }
+
+    const headers = ['SKU', 'Product', 'Category', 'Trend Score', 'Stock', 'Predicted Demand', 'Signal Type', 'AI Reason', 'Status'];
+    const lines = rows.map(r =>
+      [
+        r.sku, `"${r.productName}"`, r.category,
+        r.trendScore, r.currentStock, r.predictedDemand,
+        r.signalType, `"${r.reason?.replace(/"/g, "'") ?? ''}"`,
+        r.isAlert ? 'Alert' : 'OK',
+      ].join(',')
+    );
+
+    const csv  = [headers.join(','), ...lines].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `ai-pulse-signals-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.showSnack(`✅ Exported ${rows.length} signals to CSV`, 'snack-success');
+  }
 
   /**
    * Triggers AI analysis for the entered keyword.

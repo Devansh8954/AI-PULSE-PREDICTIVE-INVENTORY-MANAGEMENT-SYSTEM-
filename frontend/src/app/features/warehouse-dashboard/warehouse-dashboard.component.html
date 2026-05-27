@@ -10,7 +10,7 @@
       </div>
     </div>
     <div class="page-topbar__right">
-      <button mat-icon-button (click)="onRefresh()" matTooltip="Refresh inventory" [disabled]="isLoading">
+      <button mat-icon-button (click)="onRefresh()" matTooltip="Refresh" [disabled]="isLoading || loadingOrders">
         <mat-icon>refresh</mat-icon>
       </button>
       <span class="role-badge role-badge--green">WAREHOUSE</span>
@@ -23,7 +23,16 @@
     <span>{{ apiError }}</span>
   </div>
 
-  <!-- Loading state -->
+  <!-- PO Status Error Banner -->
+  <div class="api-error-banner api-error-banner--dismissible" *ngIf="poStatusError">
+    <mat-icon>warning_amber</mat-icon>
+    <span>{{ poStatusError }}</span>
+    <button mat-icon-button (click)="poStatusError = ''" class="dismiss-btn">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Loading state (bin inventory) -->
   <div class="loading-state" *ngIf="isLoading">
     <mat-spinner diameter="48"></mat-spinner>
     <p>Loading warehouse inventory…</p>
@@ -31,7 +40,7 @@
 
   <ng-container *ngIf="!isLoading">
 
-    <!-- Stats (derived from live data) -->
+    <!-- Stats -->
     <section class="stats-row">
       <div class="stat-card stat-card--blue">
         <div class="stat-card__icon"><mat-icon>place</mat-icon></div>
@@ -63,7 +72,120 @@
       </div>
     </section>
 
-    <!-- Empty state -->
+    <!-- ── PO Actions Section (Warehouse scope: Dispatch + Receive) ────────── -->
+    <section class="panel mx-page">
+      <div class="panel__header">
+        <div class="panel__title-row">
+          <mat-icon class="text-green">local_shipping</mat-icon>
+          <h2 class="panel__title">Inbound Purchase Orders</h2>
+        </div>
+        <div class="po-stat-chips">
+          <span class="po-chip po-chip--blue">
+            <mat-icon>thumb_up</mat-icon>
+            {{ pendingDispatch }} Awaiting Dispatch
+          </span>
+          <span class="po-chip po-chip--purple">
+            <mat-icon>local_shipping</mat-icon>
+            {{ inTransit }} In Transit
+          </span>
+        </div>
+      </div>
+
+      <!-- Role ownership strip -->
+      <div class="role-scope-strip">
+        <mat-icon>info_outline</mat-icon>
+        <span>
+          <strong>Warehouse actions:</strong> Mark Approved POs as <em>Dispatched</em> (goods left vendor),
+          then <em>Received</em> (goods arrived &amp; logged). Approval &amp; cancellation are handled by the Manager.
+        </span>
+      </div>
+
+      <div *ngIf="loadingOrders" class="loading-row">
+        <mat-spinner diameter="28"></mat-spinner>
+        <span>Loading purchase orders…</span>
+      </div>
+
+      <div *ngIf="!loadingOrders && actionablePOs.length === 0" class="empty-state">
+        <mat-icon>inbox</mat-icon>
+        <h3>No actionable purchase orders</h3>
+        <p>Once the Manager approves a PO, it will appear here for dispatch.</p>
+      </div>
+
+      <div class="table-wrapper" *ngIf="!loadingOrders && actionablePOs.length > 0">
+        <table mat-table [dataSource]="actionablePOs" class="data-table">
+
+          <ng-container matColumnDef="poNumber">
+            <th mat-header-cell *matHeaderCellDef>PO Number</th>
+            <td mat-cell *matCellDef="let row"><code class="sku-code">{{ row.poNumber }}</code></td>
+          </ng-container>
+
+          <ng-container matColumnDef="vendor">
+            <th mat-header-cell *matHeaderCellDef>Vendor</th>
+            <td mat-cell *matCellDef="let row"><span class="fw-medium">{{ row.vendor?.name ?? row.vendorId }}</span></td>
+          </ng-container>
+
+          <ng-container matColumnDef="totalUnits">
+            <th mat-header-cell *matHeaderCellDef>Units</th>
+            <td mat-cell *matCellDef="let row" class="text-blue fw-bold">{{ row.totalUnits }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="totalCost">
+            <th mat-header-cell *matHeaderCellDef>Value</th>
+            <td mat-cell *matCellDef="let row">₹ {{ row.totalCost | number:'1.2-2' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let row">
+              <mat-spinner *ngIf="updatingPOId === row.id" diameter="20" class="row-spinner"></mat-spinner>
+              <span *ngIf="updatingPOId !== row.id" class="badge" [ngClass]="getStatusClass(row.status)">
+                <mat-icon>{{ getStatusIcon(row.status) }}</mat-icon>
+                {{ row.status | titlecase }}
+              </span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef>Created</th>
+            <td mat-cell *matCellDef="let row" class="text-muted">{{ row.createdAt | date:'dd MMM, HH:mm' }}</td>
+          </ng-container>
+
+          <!-- ── Warehouse actions: Dispatch + Receive only ─────────────────── -->
+          <ng-container matColumnDef="wh_actions">
+            <th mat-header-cell *matHeaderCellDef>Warehouse Action</th>
+            <td mat-cell *matCellDef="let row" class="actions-cell">
+
+              <!-- APPROVED → Mark Dispatched -->
+              <button *ngIf="row.status === 'APPROVED' && updatingPOId !== row.id"
+                      mat-stroked-button
+                      class="wh-action-btn wh-action-btn--dispatch"
+                      (click)="openDispatchConfirm(row)"
+                      matTooltip="Mark goods as dispatched from vendor">
+                <mat-icon>local_shipping</mat-icon>
+                <span>Mark Dispatched</span>
+              </button>
+
+              <!-- DISPATCHED → Mark Received -->
+              <button *ngIf="row.status === 'DISPATCHED' && updatingPOId !== row.id"
+                      mat-stroked-button
+                      class="wh-action-btn wh-action-btn--receive"
+                      (click)="openReceiveConfirm(row)"
+                      matTooltip="Confirm goods received in warehouse">
+                <mat-icon>inventory</mat-icon>
+                <span>Confirm Receipt</span>
+              </button>
+
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedPOCols"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedPOCols;"
+              [class.row--updating]="updatingPOId === row.id"></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- Empty state for bin inventory -->
     <div class="empty-state" *ngIf="!warehouseItems.length && !apiError">
       <mat-icon>shelves</mat-icon>
       <h3>No inventory records found</h3>
@@ -145,7 +267,44 @@
       </div>
     </section>
 
-
   </ng-container>
+
+  <!-- ── Confirm Modal (Dispatch / Receive) ──────────────────────────────────── -->
+  <div class="wh-modal-backdrop" *ngIf="confirmPO" (click)="closeConfirm()"></div>
+  <div class="wh-modal-panel" *ngIf="confirmPO">
+
+    <div class="confirm-icon"
+         [class.confirm-icon--purple]="confirmAction === 'dispatch'"
+         [class.confirm-icon--green]="confirmAction === 'receive'">
+      <mat-icon>{{ confirmAction === 'dispatch' ? 'local_shipping' : 'inventory' }}</mat-icon>
+    </div>
+
+    <h2 class="confirm-title">{{ confirmTitle }}</h2>
+    <p class="confirm-body">{{ confirmBody }}</p>
+
+    <!-- Status flow preview -->
+    <div class="confirm-flow">
+      <ng-container *ngIf="confirmAction === 'dispatch'">
+        <span class="badge badge--blue"><mat-icon>thumb_up</mat-icon>Approved</span>
+        <mat-icon class="flow-arrow">east</mat-icon>
+        <span class="badge badge--purple"><mat-icon>local_shipping</mat-icon>Dispatched</span>
+      </ng-container>
+      <ng-container *ngIf="confirmAction === 'receive'">
+        <span class="badge badge--purple"><mat-icon>local_shipping</mat-icon>Dispatched</span>
+        <mat-icon class="flow-arrow">east</mat-icon>
+        <span class="badge badge--green"><mat-icon>inventory</mat-icon>Received</span>
+      </ng-container>
+    </div>
+
+    <div class="confirm-actions">
+      <button mat-stroked-button (click)="closeConfirm()">Go Back</button>
+      <button mat-flat-button
+              [class.btn-dispatch]="confirmAction === 'dispatch'"
+              [class.btn-receive]="confirmAction === 'receive'"
+              (click)="executeStatusChange()">
+        {{ confirmBtnLabel }}
+      </button>
+    </div>
+  </div>
 
 </div>

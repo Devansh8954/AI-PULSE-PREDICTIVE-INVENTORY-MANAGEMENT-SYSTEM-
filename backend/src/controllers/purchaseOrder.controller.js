@@ -90,15 +90,55 @@ const createPurchaseOrder = async (req, res, next) => {
 const updateStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
+    const role      = req.user?.role;
+    const newStatus = status?.toUpperCase();
+
+    // ── Validate the requested status value ───────────────────────────────────
     const allowed = ['PENDING', 'APPROVED', 'DISPATCHED', 'RECEIVED', 'CANCELLED'];
-    if (!allowed.includes(status?.toUpperCase())) {
+    if (!allowed.includes(newStatus)) {
       return next(new AppError(`Invalid status. Allowed: ${allowed.join(', ')}`, 400));
     }
 
+    // ── Role-based transition rules ───────────────────────────────────────────
+    //  MANAGER   → may only Approve or Cancel
+    //  WAREHOUSE → may only Dispatch or Receive
+    //  ADMIN     → unrestricted
+    const MANAGER_ALLOWED   = new Set(['APPROVED', 'CANCELLED']);
+    const WAREHOUSE_ALLOWED = new Set(['DISPATCHED', 'RECEIVED']);
+
+    if (role === 'MANAGER' && !MANAGER_ALLOWED.has(newStatus)) {
+      return next(new AppError(
+        'Managers may only Approve or Cancel a PO. Dispatching and receiving must be actioned by the Warehouse team.',
+        403,
+      ));
+    }
+    if (role === 'WAREHOUSE' && !WAREHOUSE_ALLOWED.has(newStatus)) {
+      return next(new AppError(
+        'Warehouse staff may only mark a PO as Dispatched or Received. Approval and cancellation must be done by the Manager.',
+        403,
+      ));
+    }
+
+    // ── Fetch PO and guard against illogical transitions ─────────────────────
     const po = await PurchaseOrder.findByPk(req.params.id);
     if (!po) return next(new AppError(`Purchase order '${req.params.id}' not found.`, 404));
 
-    await po.update({ status: status.toUpperCase() });
+    const VALID_TRANSITIONS = {
+      PENDING:    ['APPROVED', 'CANCELLED'],
+      APPROVED:   ['DISPATCHED', 'CANCELLED'],
+      DISPATCHED: ['RECEIVED'],
+      RECEIVED:   [],   // terminal
+      CANCELLED:  [],   // terminal
+    };
+    const validNext = VALID_TRANSITIONS[po.status] ?? [];
+    if (!validNext.includes(newStatus)) {
+      return next(new AppError(
+        `Cannot move a PO from ${po.status} to ${newStatus}. Valid next: ${validNext.join(', ') || 'none (terminal state)'}.`,
+        400,
+      ));
+    }
+
+    await po.update({ status: newStatus });
     return res.status(200).json({ success: true, data: po });
   } catch (err) { next(err); }
 };

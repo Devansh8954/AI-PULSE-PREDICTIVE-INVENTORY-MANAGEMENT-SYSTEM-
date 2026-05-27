@@ -123,10 +123,42 @@
           <mat-icon class="text-gold">table_chart</mat-icon>
           <h2 class="panel__title">30-Day Demand Forecast</h2>
         </div>
-        <span class="count-badge">{{ forecastRows.length }} SKUs</span>
+        <div class="analyst-actions">
+          <!-- Alert level filter pills -->
+          <div class="alert-filters">
+            <button *ngFor="let f of alertFilters"
+                    mat-stroked-button
+                    class="alert-filter-btn"
+                    [class.alert-filter-btn--active]="activeAlertFilter === f.value"
+                    [class.alert-filter-btn--red]="f.value === 'CRITICAL' && activeAlertFilter === f.value"
+                    [class.alert-filter-btn--gold]="f.value === 'MODERATE' && activeAlertFilter === f.value"
+                    [class.alert-filter-btn--green]="f.value === 'LOW' && activeAlertFilter === f.value"
+                    (click)="setAlertFilter(f.value)">
+              {{ f.label }}
+            </button>
+          </div>
+
+          <!-- Text search -->
+          <mat-form-field appearance="outline" class="analyst-search">
+            <mat-icon matPrefix>search</mat-icon>
+            <input matInput [formControl]="searchControl" placeholder="Search SKU / product…" />
+          </mat-form-field>
+
+          <!-- Export CSV -->
+          <button mat-stroked-button class="analyst-export-btn"
+                  (click)="exportCSV()"
+                  [disabled]="forecastDataSource.filteredData.length === 0"
+                  matTooltip="Export filtered rows as CSV">
+            <mat-icon>download</mat-icon>
+            Export CSV
+          </button>
+
+          <!-- Count badge -->
+          <span class="count-badge">{{ forecastDataSource.filteredData.length }} / {{ forecastRows.length }} SKUs</span>
+        </div>
       </div>
       <div class="table-wrapper">
-        <table mat-table [dataSource]="forecastRows" class="data-table">
+        <table mat-table [dataSource]="forecastDataSource" class="data-table">
 
           <ng-container matColumnDef="sku">
             <th mat-header-cell *matHeaderCellDef>SKU</th>

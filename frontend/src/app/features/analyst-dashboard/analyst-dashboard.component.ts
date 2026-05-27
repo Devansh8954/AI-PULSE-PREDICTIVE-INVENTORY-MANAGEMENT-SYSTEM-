@@ -2,11 +2,14 @@ import {
   Component, OnInit, ViewChild, ElementRef,
   AfterViewInit, OnDestroy, NgZone
 } from '@angular/core';
+import { FormControl } from '@angular/forms';
+import { MatTableDataSource } from '@angular/material/table';
 import { Subject, forkJoin, of } from 'rxjs';
 import { takeUntil, catchError, finalize } from 'rxjs/operators';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { InventoryService } from '../../core/services/inventory.service';
 import { ForecastService, ForecastResult } from '../../core/services/forecast.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 Chart.register(...registerables);
 
@@ -80,13 +83,46 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
     'depletionDays', 'confidence', 'alertLevel', 'trend',
   ];
 
+  /** MatTableDataSource enables client-side filtering on the forecast table */
+  forecastDataSource = new MatTableDataSource<ForecastRow>([]);
+
+  /** Active alert level filter */
+  activeAlertFilter = '';
+
+  /** Text search control */
+  searchControl = new FormControl('');
+
+  readonly alertFilters = [
+    { label: 'All',      value: '',         class: '' },
+    { label: 'Critical', value: 'CRITICAL',  class: 'filter--red' },
+    { label: 'Moderate', value: 'MODERATE',  class: 'filter--gold' },
+    { label: 'Low Risk', value: 'LOW',       class: 'filter--green' },
+  ];
+
   constructor(
     private inventoryService: InventoryService,
     private forecastService:  ForecastService,
     private ngZone: NgZone,
+    private snackBar: MatSnackBar,
   ) {}
 
   ngOnInit(): void {
+    // Set up filter predicate BEFORE data loads
+    this.forecastDataSource.filterPredicate = (row: ForecastRow, filter: string) => {
+      const parts       = filter.split('|');
+      const textFilter  = parts[0] ?? '';
+      const levelFilter = parts[1] ?? '';
+
+      const textMatch  = !textFilter ||
+        [row.sku, row.productName, row.category].join(' ').toLowerCase().includes(textFilter);
+      const levelMatch = !levelFilter || row.alertLevel === levelFilter;
+      return textMatch && levelMatch;
+    };
+
+    // Wire search control
+    this.searchControl.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.applyFilter());
+
     this.loadForecastData();
   }
 
@@ -115,6 +151,40 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
 
   onRefresh(): void {
     this.loadForecastData();
+  }
+
+  setAlertFilter(value: string): void {
+    this.activeAlertFilter = value;
+    this.applyFilter();
+  }
+
+  private applyFilter(): void {
+    const text = (this.searchControl.value ?? '').trim().toLowerCase();
+    this.forecastDataSource.filter = `${text}|${this.activeAlertFilter}`;
+  }
+
+  /** Export the currently visible (filtered) forecast rows as CSV */
+  exportCSV(): void {
+    const rows = this.forecastDataSource.filteredData;
+    if (!rows.length) {
+      this.snackBar.open('No data to export.', '✕', { duration: 3000, panelClass: ['snack-error'] });
+      return;
+    }
+    const headers = ['SKU', 'Product', 'Category', 'Stock', 'Predicted Demand (30d)', 'Depletion Days', 'Confidence %', 'Alert Level', 'Trend'];
+    const lines = rows.map(r => [
+      r.sku, `"${r.productName}"`, r.category,
+      r.currentStock, r.predictedDemand,
+      r.depletionDays === 999 ? 'Safe' : r.depletionDays,
+      r.confidence, r.alertLevel, r.trend,
+    ].join(','));
+    const csv  = [headers.join(','), ...lines].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `ai-pulse-forecast-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.snackBar.open(`✅ Exported ${rows.length} forecast rows to CSV`, '✕', { duration: 3000, panelClass: ['snack-success'] });
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -181,6 +251,10 @@ export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestr
             this.forecastRows = results
               .filter((r): r is ForecastResult => r !== null)
               .map(r => this.toForecastRow(r, productMap[r.productId]));
+
+            // Sync the filterable data source
+            this.forecastDataSource.data = this.forecastRows;
+            this.applyFilter();
 
             // Refresh charts — run inside NgZone so change detection fires.
             // Also schedule a deferred update in case chartsBuilt is not yet
