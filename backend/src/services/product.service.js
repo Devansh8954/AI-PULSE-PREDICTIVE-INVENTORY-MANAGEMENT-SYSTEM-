@@ -18,7 +18,6 @@
  *  - No magic numbers: constants extracted at the top.
  */
 
-const { Op }           = require('sequelize');
 const { Product, Inventory, Vendor } = require('../models');
 const NotFoundError    = require('../models/errors/NotFoundError');
 const ConflictError    = require('../models/errors/ConflictError');

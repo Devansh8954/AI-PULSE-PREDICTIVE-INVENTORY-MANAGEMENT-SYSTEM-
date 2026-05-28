@@ -14,13 +14,18 @@
  *   ✅ Invalid version: version = -1 → AppError (400)
  */
 
-jest.mock('../../src/repositories/inventory.repository');
+// ── Explicit factory mock: prevents jest from loading the real module
+// (which would trigger db.config.js → throws without DB_PASSWORD in CI env)
+jest.mock('../../src/repositories/inventory.repository', () => ({
+  findById:               jest.fn(),
+  updateStockAtomically:  jest.fn(),
+  updateStockWithHistory: jest.fn(),
+}));
 
 const InventoryRepository   = require('../../src/repositories/inventory.repository');
 const InventoryService      = require('../../src/services/inventory.service');
 const ConcurrentUpdateError = require('../../src/models/errors/ConcurrentUpdateError');
 const NotFoundError         = require('../../src/models/errors/NotFoundError');
-const AppError              = require('../../src/models/errors/AppError');
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -64,7 +69,6 @@ describe('InventoryService.updateStock — Optimistic Locking', () => {
   // ── Happy path ─────────────────────────────────────────────────────────────
 
   it('should return updated record when version matches and stock is sufficient', async () => {
-    const current = makeInventoryRecord();
     const updated = makeInventoryRecord({ quantityOnHand: 35, version: 4 }); // after -5
 
     InventoryRepository.updateStockWithHistory.mockResolvedValue(1);  // affectedRows = 1

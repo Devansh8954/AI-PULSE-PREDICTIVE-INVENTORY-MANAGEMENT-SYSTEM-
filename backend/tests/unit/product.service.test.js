@@ -72,7 +72,7 @@ describe('ProductService', () => {
       };
       Product.findOne.mockResolvedValue(mockProduct);
 
-      const result = await ProductService.updateProduct('abc-123', {
+      const _result = await ProductService.updateProduct('abc-123', {
         name: 'New Name', version: 2,
       });
 

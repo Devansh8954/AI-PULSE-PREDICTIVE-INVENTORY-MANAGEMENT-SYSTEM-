@@ -35,8 +35,8 @@
  */
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { Op }                 = require('sequelize');
-const { sequelize, Product, Inventory, TrendSignal } = require('../models');
+const { Op }                        = require('sequelize');
+const { Product, Inventory, TrendSignal } = require('../models');
 const logger                 = require('../utils/logger');
 const AppError               = require('../models/errors/AppError');
 
@@ -331,7 +331,7 @@ const analyzeKeyword = async (keyword) => {
       signalsWritten:  upsertResults.length,
       threshold:       RESTOCK_THRESHOLD,
     },
-    trendingProducts: enriched.map(({ inventoryRecords, ...rest }) => rest), // strip raw DB records
+    trendingProducts: enriched.map(({ inventoryRecords: _inv, ...rest }) => rest), // strip raw DB records
   };
 
   logger.info(

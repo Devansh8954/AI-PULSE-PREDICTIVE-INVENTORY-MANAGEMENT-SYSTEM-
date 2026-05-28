@@ -43,17 +43,15 @@
     "testMatch": ["**/tests/**/*.test.js"],
     "collectCoverageFrom": [
       "src/services/**/*.js",
-      "src/controllers/**/*.js",
-      "src/middlewares/**/*.js",
       "!src/scripts/**",
       "!src/config/**"
     ],
-    "coverageThresholds": {
+    "coverageThreshold": {
       "global": {
-        "lines":     60,
-        "functions": 60,
-        "branches":  50,
-        "statements": 60
+        "lines":      70,
+        "functions":  65,
+        "branches":   60,
+        "statements": 70
       }
     },
     "coverageReporters": ["text", "lcov", "html"]

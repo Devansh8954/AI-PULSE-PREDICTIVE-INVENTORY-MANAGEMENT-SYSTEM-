@@ -82,7 +82,7 @@ jobs:
           DB_PORT: 3306
           DB_NAME: ai_pulse_test
           DB_USER: root
-          DB_PASSWORD: ''
+          DB_PASSWORD: ci-test-placeholder
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
