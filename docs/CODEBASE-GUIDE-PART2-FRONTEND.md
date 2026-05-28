@@ -457,3 +457,64 @@ node src/scripts/generate-token.js ADMIN
 | `frontend/src/app/features/warehouse-dashboard/` | Feature | Bin inventory + PO dispatch |
 | `database/schema.sql` | DB | All CREATE TABLE statements |
 | `database/seed.sql` | DB | Sample data (products, vendors, inventory) |
+
+---
+
+## 34. Quick Troubleshooting
+
+### Backend won't start
+
+| Error | Cause | Fix |
+|---|---|---|
+| `DB_PASSWORD is not set` | `backend/.env` missing or empty | Create `.env` from `.env.example`, fill in password |
+| `Access denied for user 'root'` | Wrong password in `.env` | Check `DB_PASSWORD` matches your MySQL password |
+| `Cannot find module '...'` | `npm install` not run | Run `npm install` in `backend/` |
+| `EADDRINUSE: port 3000` | Another process using port 3000 | Kill it: `netstat -ano | findstr :3000` then `taskkill /PID <pid> /F` |
+| `Gemini API key missing` | `GEMINI_API_KEY` not set | Leave blank — AI features disabled, all else works |
+
+### Frontend won't start
+
+| Error | Cause | Fix |
+|---|---|---|
+| `Cannot find module '@angular/core'` | `npm install` not run | Run `npm install` in `frontend/` |
+| `Port 4200 already in use` | Another Angular instance | Kill it or use `ng serve --port 4201` |
+| `401 Unauthorized` on all API calls | JWT token expired/missing | Log out and log back in |
+| Material icons not showing | Font not loaded | Check `index.html` has the Google Fonts link |
+
+### Tests fail locally
+
+| Error | Cause | Fix |
+|---|---|---|
+| `DB_PASSWORD is not set` in tests | Not set in env before `npm test` | Run: `$env:DB_PASSWORD="anything"; npm test` |
+| Coverage threshold not met | New code added without tests | Add tests or lower threshold in `package.json` |
+| `jest.mock() not intercepting` | Module has top-level side effects | Use factory mock: `jest.mock('...', () => ({...}))` |
+
+### Git / Security
+
+| Situation | Command |
+|---|---|
+| Accidentally committed `.env` | `git rm --cached backend/.env && git commit -m "remove .env"` |
+| Password in old commit | `pip install git-filter-repo` then `git filter-repo --replace-text secrets.txt --force` |
+| Push rejected after filter-repo | `git remote add origin <url>` then `git push --force origin main` |
+
+---
+
+## 35. Glossary
+
+| Term | Meaning |
+|---|---|
+| **OCC** | Optimistic Concurrency Control — version-based conflict detection without locking rows |
+| **TOCTOU** | Time-of-check / Time-of-use — race condition between reading and updating shared data |
+| **JWT** | JSON Web Token — self-contained auth token; backend verifies without a database call |
+| **RBAC** | Role-Based Access Control — what a user can do depends on their role |
+| **BehaviorSubject** | RxJS class that always emits the latest value to new subscribers |
+| **SPA** | Single Page Application — Angular renders entirely in the browser |
+| **Guard** | Angular class that can block a route from activating |
+| **Interceptor** | Angular class that intercepts every HTTP request/response |
+| **Pipe** | Angular class that transforms template values (pure — cached by change detection) |
+| **Repository pattern** | Design pattern: isolate all database queries in one layer |
+| **Layered architecture** | Controller → Service → Repository — each layer has one job |
+| **Soft delete** | Mark a record as inactive instead of deleting it — keeps audit history |
+| **Signal TTL** | Time-to-live — trend signals expire after N days; stale signals are ignored |
+| **affectedRows** | MySQL response: how many rows the UPDATE actually changed |
+| **forkJoin** | RxJS operator: run N observables in parallel, wait for all to complete |
