@@ -1,0 +1,58 @@
+# =============================================================================
+# AI-Pulse — Root .gitignore
+# =============================================================================
+# Protects sensitive files across the entire repository.
+# The backend/ folder has its own .gitignore too (belt + suspenders).
+# =============================================================================
+
+# ── SECRETS — Never commit these ─────────────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+.env.test
+# .env.example is intentionally NOT ignored — it's a safe blank template
+
+# ── Node.js ───────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+
+# ── Build output ──────────────────────────────────────────────────────────────
+dist/
+build/
+out/
+.angular/
+coverage/
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
+
+# ── OS files ──────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── IDE / Editor ──────────────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.pem
+*.key
+*.cert
+*.p12
