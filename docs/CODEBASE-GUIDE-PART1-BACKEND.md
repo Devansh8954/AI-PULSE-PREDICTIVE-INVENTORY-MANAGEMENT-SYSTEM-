@@ -377,3 +377,143 @@ File: `backend/.env` (copy from `.env.example`)
 | `TREND_RESTOCK_THRESHOLD` | No | 50 | Low-stock threshold |
 | `TREND_SIGNAL_TTL_DAYS` | No | 7 | Signal expiry in days |
 | `CORS_ORIGIN` | No | localhost:4200 | Allowed frontend origin |
+
+---
+
+## 15. Security Practices
+
+### What Protects the API
+
+| Layer | Mechanism | Purpose |
+|---|---|---|
+| Network | `helmet` middleware | Sets 14 security HTTP headers (CSP, HSTS, X-Frame-Options, etc.) |
+| Auth | JWT Bearer tokens | Stateless — no server-side sessions |
+| Passwords | `bcrypt` (12 rounds) | Hashes are one-way; original password is never stored |
+| Rate Limiting | `express-rate-limit` | 100 req/IP/15min in production; localhost exempt in dev |
+| Roles | `auth.middleware.js` | 3-step: verify signature → check expiry → check role |
+| Input | `validate.middleware.js` | Joi schemas reject malformed request bodies before controllers run |
+| Errors | `errorHandler.middleware.js` | Stack traces never exposed in production (`NODE_ENV=production`) |
+
+### JWT Secret Best Practice
+
+```bash
+# Generate a cryptographically strong secret (run this once):
+node -e "require('crypto').randomBytes(64).toString('hex')"
+# Paste result into backend/.env as JWT_SECRET
+```
+
+Never use a short or guessable secret. The JWT is signed with HMAC-SHA256 — a weak secret can be brute-forced.
+
+### Secrets Management — What Belongs Where
+
+| File | Committed? | Contains |
+|---|---|---|
+| `backend/.env` | ❌ Never (git-ignored) | Real passwords, API keys, JWT secret |
+| `backend/.env.example` | ✅ Yes | Placeholder values only — safe template |
+| `.gitignore` (root) | ✅ Yes | Blocks `.env`, `*.key`, `*.pem`, `*.cert` |
+| `backend/.gitignore` | ✅ Yes | Belt-and-suspenders: also blocks `.env` files |
+
+> **Lesson learned:** If a real password is ever accidentally committed, use `git filter-repo --replace-text` to scrub it from ALL history, then `git push --force`. Change the password immediately.
+
+---
+
+## 16. CI/CD Pipeline (GitHub Actions)
+
+File: `.github/workflows/ci.yml`
+
+### Pipeline Structure
+
+```
+Push to main / Pull Request to main
+         │
+    ┌────┴────────────────────────────┐
+    │                                 │
+ Backend track                  Frontend track
+    │                                 │
+ 1. backend-lint (ESLint)      4. frontend-lint (tsc --noEmit)
+    │                                 │
+ 2. backend-test (Jest + cov)  5. frontend-build (ng build --prod)
+    │                                 │
+ 3. backend-audit (npm audit)  6. frontend-audit (npm audit)
+    │                                 │
+    └──────────────────┬──────────────┘
+                       │
+              7. all-checks-pass
+              (gate job — blocks merge if critical jobs fail)
+```
+
+### Job Details
+
+| Job | What It Does | Fails Build? |
+|---|---|---|
+| `backend-lint` | ESLint on `src/**/*.js` and `tests/**/*.js` | Yes (0 errors allowed) |
+| `backend-test` | Jest unit tests + coverage enforcement | Yes |
+| `backend-audit` | `npm audit --audit-level=high` — no high/critical CVEs | Yes |
+| `frontend-lint` | `tsc --noEmit` — TypeScript type check | Yes |
+| `frontend-build` | `ng build --configuration production` | Yes |
+| `frontend-audit` | `npm audit` — Angular deps, soft fail allowed | No (warnings only) |
+
+### Coverage Thresholds (Enforced in CI)
+
+Only **service files** are measured (controllers/middlewares need a live DB):
+
+| Metric | Threshold | Current |
+|---|---|---|
+| Statements | 70% | ~76% ✅ |
+| Functions | 65% | ~69% ✅ |
+| Branches | 60% | ~65% ✅ |
+| Lines | 70% | ~77% ✅ |
+
+### Key CI Design Decisions
+
+**Why `DB_PASSWORD=ci-test-placeholder` in CI?**
+The `db.config.js` has a fail-fast guard: if `DB_PASSWORD` is not set, it throws immediately. Unit tests mock the repository layer (no live DB needed), but `db.config.js` still runs during module loading. Setting a non-empty placeholder satisfies the guard without a real database.
+
+**Why explicit factory mock in `inventory.service.test.js`?**
+```js
+jest.mock('../../src/repositories/inventory.repository', () => ({
+  findById: jest.fn(),
+  updateStockWithHistory: jest.fn(),
+}));
+```
+Auto-mocking (`jest.mock('...')` without factory) still loads the real module to analyze its export shape. That loads `inventory.repository.js` → `db.config.js` → throws. The factory mock bypasses the real module entirely — Jest never loads it.
+
+---
+
+## 17. Bugs Fixed During Development (Reference)
+
+| Bug | Root Cause | Fix |
+|---|---|---|
+| `coverageThresholds` ignored by Jest | Typo: should be `coverageThreshold` (no 's') | Fixed in `package.json` |
+| Inventory test suite crashed in CI | Auto-mock triggered `db.config.js` without `DB_PASSWORD` | Replaced with factory mock |
+| `unused-vars` ESLint warnings | `sequelize`, `Op`, `inventoryRecords` imported but not used | Removed imports; prefixed unused vars with `_` |
+| `.env` accidentally deleted | User deleted the file | Recreated from `.env.example` template |
+| `abc@123` exposed in git history | Put in `.env.example` which was committed | Used `git filter-repo --replace-text` to scrub history |
+
+---
+
+## 18. Project Health Snapshot
+
+Last verified: May 2026
+
+```
+Backend:
+  ✅ npm run lint    → 0 errors, 9 warnings (all process.exit in scripts)
+  ✅ npm run test    → 19/19 tests pass, 3/3 suites
+  ✅ Coverage        → 76.59% statements (threshold: 70%)
+  ✅ 24/24 modules load cleanly (verified via node -e require())
+
+Frontend:
+  ✅ tsc --noEmit   → 0 TypeScript errors
+  ✅ ng build --prod → production bundle builds cleanly
+
+Security:
+  ✅ git history scrubbed (no passwords in any commit)
+  ✅ .env git-ignored at both root and backend level
+  ✅ .env.example has placeholder values only
+
+CI/CD:
+  ✅ GitHub Actions pipeline configured (7 jobs)
+  ✅ Coverage thresholds enforced
+  ✅ Security audit on every push
+```
