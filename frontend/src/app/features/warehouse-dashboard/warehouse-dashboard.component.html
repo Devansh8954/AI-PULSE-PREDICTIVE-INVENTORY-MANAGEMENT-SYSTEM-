@@ -100,10 +100,7 @@
         </span>
       </div>
 
-      <div *ngIf="loadingOrders" class="loading-row">
-        <mat-spinner diameter="28"></mat-spinner>
-        <span>Loading purchase orders…</span>
-      </div>
+      <app-loading-row *ngIf="loadingOrders" message="Loading purchase orders…"></app-loading-row>
 
       <div *ngIf="!loadingOrders && actionablePOs.length === 0" class="empty-state">
         <mat-icon>inbox</mat-icon>
@@ -138,8 +135,8 @@
             <th mat-header-cell *matHeaderCellDef>Status</th>
             <td mat-cell *matCellDef="let row">
               <mat-spinner *ngIf="updatingPOId === row.id" diameter="20" class="row-spinner"></mat-spinner>
-              <span *ngIf="updatingPOId !== row.id" class="badge" [ngClass]="getStatusClass(row.status)">
-                <mat-icon>{{ getStatusIcon(row.status) }}</mat-icon>
+              <span *ngIf="updatingPOId !== row.id" class="badge" [ngClass]="row.status | statusClass">
+                <mat-icon>{{ row.status | statusIcon }}</mat-icon>
                 {{ row.status | titlecase }}
               </span>
             </td>

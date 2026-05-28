@@ -141,21 +141,9 @@ export class WarehouseDashboardComponent implements OnInit, OnDestroy {
   }
 
   // ── Status helpers ─────────────────────────────────────────────────────────
-  getStatusClass(status: string): string {
-    const map: Record<string, string> = {
-      PENDING: 'badge--gold', APPROVED: 'badge--blue',
-      DISPATCHED: 'badge--purple', RECEIVED: 'badge--green', CANCELLED: 'badge--red',
-    };
-    return map[status] ?? '';
-  }
-
-  getStatusIcon(status: string): string {
-    const map: Record<string, string> = {
-      PENDING: 'schedule', APPROVED: 'thumb_up',
-      DISPATCHED: 'local_shipping', RECEIVED: 'inventory', CANCELLED: 'cancel',
-    };
-    return map[status] ?? 'info';
-  }
+  // NOTE: getStatusClass() and getStatusIcon() have been moved to the shared
+  // StatusClassPipe and StatusIconPipe (shared/pipes/status.pipes.ts).
+  // Templates use: [ngClass]="row.status | statusClass" / {{ row.status | statusIcon }}
 
   // ── Bin inventory helpers ──────────────────────────────────────────────────
   getCapacityPct(item: WarehouseItem): number {

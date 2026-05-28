@@ -234,27 +234,13 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   }
 
   // ── Status helpers ─────────────────────────────────────────────────────────
+  // NOTE: getStatusClass() and getStatusIcon() have been moved to the shared
+  // StatusClassPipe and StatusIconPipe (shared/pipes/status.pipes.ts).
+  // The templates now use: [ngClass]="row.status | statusClass" etc.
+
   getAlertStatus(record: InventoryRecord): 'critical' | 'low' | 'ok' {
     if (record.quantityOnHand <= record.safetyStockLevel) return 'critical';
     if (record.isBelowReorderPoint) return 'low';
     return 'ok';
-  }
-
-  getStatusClass(status: string): string {
-    const map: Record<string, string> = {
-      critical: 'badge--red', low: 'badge--gold', ok: 'badge--green',
-      PENDING: 'badge--gold', APPROVED: 'badge--blue',
-      DISPATCHED: 'badge--purple', RECEIVED: 'badge--green', CANCELLED: 'badge--red',
-    };
-    return map[status] ?? '';
-  }
-
-  getStatusIcon(status: string): string {
-    const map: Record<string, string> = {
-      critical: 'error', low: 'warning_amber', ok: 'check_circle',
-      PENDING: 'schedule', APPROVED: 'thumb_up',
-      DISPATCHED: 'local_shipping', RECEIVED: 'inventory', CANCELLED: 'cancel',
-    };
-    return map[status] ?? 'info';
   }
 }
