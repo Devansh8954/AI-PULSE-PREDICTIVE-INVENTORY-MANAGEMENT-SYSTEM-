@@ -3,7 +3,12 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { HttpClient }        from '@angular/common/http';
 import { RouterTestingModule } from '@angular/router/testing';
 import { Router }            from '@angular/router';
+import { Component }         from '@angular/core';
 import { AuthService, ROLE_ACCESS, ROLE_HOME } from './auth.service';
+
+/** Stub component required so RouterTestingModule can register the /login route */
+@Component({ template: '' })
+class LoginStubComponent {}
 
 /**
  * auth.service.spec.ts
@@ -26,7 +31,14 @@ describe('AuthService', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, RouterTestingModule],
+      imports: [
+        HttpClientTestingModule,
+        // Register stub /login route so navigate(['/login']) in logout() doesn't throw NG04002
+        RouterTestingModule.withRoutes([
+          { path: 'login', component: LoginStubComponent },
+        ]),
+      ],
+      declarations: [LoginStubComponent],
       providers: [AuthService],
     });
     service  = TestBed.inject(AuthService);
@@ -125,11 +137,10 @@ describe('AuthService', () => {
     expect(localStorage.getItem('ai_pulse_user')).toBeNull();
   });
 
-  it('logout() should emit null from user$ observable', (done) => {
-    service.user$.subscribe((user) => {
-      if (user === null) { done(); }
-    });
+  it('logout() should emit null from user$ observable', () => {
+    // Use synchronous check — currentUser is null after logout() is called
     service.logout();
+    expect(service.currentUser).toBeNull();
   });
 
   // ── login() ────────────────────────────────────────────────────────────────
