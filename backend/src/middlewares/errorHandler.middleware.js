@@ -30,7 +30,7 @@
  */
 
 const logger    = require('../utils/logger');
-const AppError  = require('../models/errors/AppError');
+const AppError  = require('../errors/AppError');
 
 // ── Sequelize error translators ──────────────────────────────────────────────
 

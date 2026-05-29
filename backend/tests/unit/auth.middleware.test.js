@@ -21,7 +21,7 @@ const jwt = require('jsonwebtoken');
 jest.mock('../../src/config/jwt.config', () => ({ secret: 'test-secret-32-chars-long-minimum' }));
 
 const auth      = require('../../src/middlewares/auth.middleware');
-const AppError  = require('../../src/models/errors/AppError');
+const AppError  = require('../../src/errors/AppError');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

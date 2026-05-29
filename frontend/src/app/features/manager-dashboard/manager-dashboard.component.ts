@@ -10,9 +10,10 @@ import { AuthService } from '../../core/services/auth.service';
  * Dispatching and receiving are handled exclusively by the Warehouse dashboard.
  */
 @Component({
-  selector: 'app-manager-dashboard',
-  templateUrl: './manager-dashboard.component.html',
-  styleUrls: ['./manager-dashboard.component.scss'],
+    selector: 'app-manager-dashboard',
+    templateUrl: './manager-dashboard.component.html',
+    styleUrls: ['./manager-dashboard.component.scss'],
+    standalone: false
 })
 export class ManagerDashboardComponent implements OnInit, OnDestroy {
 

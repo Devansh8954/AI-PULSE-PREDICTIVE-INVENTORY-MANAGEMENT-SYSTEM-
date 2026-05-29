@@ -15,7 +15,7 @@
 
 const jwt         = require('jsonwebtoken');
 const { secret }  = require('../config/jwt.config');
-const AppError    = require('../models/errors/AppError');
+const AppError    = require('../errors/AppError');
 
 /**
  * Returns an Express middleware that verifies JWT and checks allowed roles.

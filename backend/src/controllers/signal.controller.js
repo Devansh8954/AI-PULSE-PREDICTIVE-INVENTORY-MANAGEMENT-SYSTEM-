@@ -8,7 +8,7 @@
  */
 
 const { TrendSignal, Product } = require('../models');
-const NotFoundError = require('../models/errors/NotFoundError');
+const NotFoundError = require('../errors/NotFoundError');
 
 const listSignals = async (req, res, next) => {
   try {

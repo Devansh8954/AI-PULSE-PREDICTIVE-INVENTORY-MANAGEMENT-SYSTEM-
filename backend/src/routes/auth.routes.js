@@ -12,7 +12,7 @@ const router   = require('express').Router();
 const ctrl     = require('../controllers/auth.controller');
 const auth     = require('../middlewares/auth.middleware');
 const validate = require('../middlewares/validate.middleware');
-const { registerSchema, loginSchema } = require('../models/schemas/auth.schema');
+const { registerSchema, loginSchema } = require('../schemas/auth.schema');
 
 router.post('/register', validate(registerSchema), ctrl.register);
 router.post('/login',    validate(loginSchema),    ctrl.login);

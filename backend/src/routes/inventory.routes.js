@@ -4,7 +4,7 @@ const router   = require('express').Router();
 const ctrl     = require('../controllers/inventory.controller');
 const auth     = require('../middlewares/auth.middleware');
 const validate = require('../middlewares/validate.middleware');
-const { adjustInventorySchema } = require('../models/schemas/inventory.schema');
+const { adjustInventorySchema } = require('../schemas/inventory.schema');
 
 // GET   /api/v1/inventory              → list all inventory (paginated; ?lowStock=true for alerts)
 // GET   /api/v1/inventory/:id          → get one record (includes current version for OCC)

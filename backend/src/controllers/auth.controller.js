@@ -14,7 +14,7 @@
 
 const bcrypt               = require('bcryptjs');
 const User                 = require('../models/user.model');
-const AppError             = require('../models/errors/AppError');
+const AppError             = require('../errors/AppError');
 const { signUserToken, publicUser } = require('../utils/auth.helpers');
 
 const SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS) || 12;

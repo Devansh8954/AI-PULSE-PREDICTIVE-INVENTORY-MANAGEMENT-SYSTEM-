@@ -8,9 +8,9 @@
 const { Inventory, Product, Vendor } = require('../models');
 const { Op }                          = require('sequelize');
 const InventoryRepository             = require('../repositories/inventory.repository');
-const NotFoundError                   = require('../models/errors/NotFoundError');
-const ConcurrentUpdateError           = require('../models/errors/ConcurrentUpdateError');
-const AppError                        = require('../models/errors/AppError');
+const NotFoundError                   = require('../errors/NotFoundError');
+const ConcurrentUpdateError           = require('../errors/ConcurrentUpdateError');
+const AppError                        = require('../errors/AppError');
 const logger                          = require('../utils/logger');
 
 const MAX_DELTA_ABS = 10_000;

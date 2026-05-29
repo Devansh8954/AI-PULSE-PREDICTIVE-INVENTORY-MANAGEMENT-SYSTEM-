@@ -10,14 +10,14 @@ import { Component, Input } from '@angular/core';
  *   <app-loading-row *ngIf="isLoading" message="Loading purchase orders…"></app-loading-row>
  */
 @Component({
-  selector: 'app-loading-row',
-  template: `
+    selector: 'app-loading-row',
+    template: `
     <div class="loading-row">
       <mat-spinner diameter="28"></mat-spinner>
       <span>{{ message }}</span>
     </div>
   `,
-  styles: [`
+    styles: [`
     .loading-row {
       display: flex;
       align-items: center;
@@ -27,6 +27,7 @@ import { Component, Input } from '@angular/core';
       font-size: 13px;
     }
   `],
+    standalone: false
 })
 export class LoadingRowComponent {
   /** Text shown next to the spinner. */

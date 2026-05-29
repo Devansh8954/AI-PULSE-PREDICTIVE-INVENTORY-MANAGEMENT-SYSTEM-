@@ -38,7 +38,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { Op }                        = require('sequelize');
 const { Product, Inventory, TrendSignal } = require('../models');
 const logger                 = require('../utils/logger');
-const AppError               = require('../models/errors/AppError');
+const AppError               = require('../errors/AppError');
 
 // ── Constants ────────────────────────────────────────────────────────────────
 

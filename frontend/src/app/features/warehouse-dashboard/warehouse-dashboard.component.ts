@@ -20,9 +20,10 @@ export interface WarehouseItem {
 }
 
 @Component({
-  selector: 'app-warehouse-dashboard',
-  templateUrl: './warehouse-dashboard.component.html',
-  styleUrls: ['./warehouse-dashboard.component.scss'],
+    selector: 'app-warehouse-dashboard',
+    templateUrl: './warehouse-dashboard.component.html',
+    styleUrls: ['./warehouse-dashboard.component.scss'],
+    standalone: false
 })
 export class WarehouseDashboardComponent implements OnInit, OnDestroy {
 

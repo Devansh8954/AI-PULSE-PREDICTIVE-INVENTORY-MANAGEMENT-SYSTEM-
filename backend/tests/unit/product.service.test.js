@@ -21,8 +21,8 @@ jest.mock('../../src/models', () => ({
 
 const { Product } = require('../../src/models');
 const ProductService = require('../../src/services/product.service');
-const NotFoundError  = require('../../src/models/errors/NotFoundError');
-const ConflictError  = require('../../src/models/errors/ConflictError');
+const NotFoundError  = require('../../src/errors/NotFoundError');
+const ConflictError  = require('../../src/errors/ConflictError');
 
 describe('ProductService', () => {
 

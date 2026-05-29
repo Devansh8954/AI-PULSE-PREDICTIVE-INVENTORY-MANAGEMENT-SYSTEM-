@@ -43,9 +43,10 @@ const CHART_THEME = {
 };
 
 @Component({
-  selector: 'app-analyst-dashboard',
-  templateUrl: './analyst-dashboard.component.html',
-  styleUrls: ['./analyst-dashboard.component.scss'],
+    selector: 'app-analyst-dashboard',
+    templateUrl: './analyst-dashboard.component.html',
+    styleUrls: ['./analyst-dashboard.component.scss'],
+    standalone: false
 })
 export class AnalystDashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 

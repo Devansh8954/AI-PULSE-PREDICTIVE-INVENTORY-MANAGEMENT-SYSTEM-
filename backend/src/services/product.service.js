@@ -18,13 +18,14 @@
  *  - No magic numbers: constants extracted at the top.
  */
 
-const { Product, Inventory, Vendor } = require('../models');
-const NotFoundError    = require('../models/errors/NotFoundError');
-const ConflictError    = require('../models/errors/ConflictError');
+const { Product, Inventory, Vendor }   = require('../models');
+const { PAGINATION_LIMIT }             = require('../config/app.config');
+const NotFoundError                    = require('../errors/NotFoundError');
+const ConflictError                    = require('../errors/ConflictError');
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const DEFAULT_PAGE  = 1;
-const DEFAULT_LIMIT = 20;
+const DEFAULT_LIMIT = PAGINATION_LIMIT;   // centralised in app.config.js
 const MAX_LIMIT     = 100;
 
 // ── Private Helpers ──────────────────────────────────────────────────────────

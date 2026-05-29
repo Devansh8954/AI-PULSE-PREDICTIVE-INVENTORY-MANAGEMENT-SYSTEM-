@@ -24,8 +24,8 @@ jest.mock('../../src/repositories/inventory.repository', () => ({
 
 const InventoryRepository   = require('../../src/repositories/inventory.repository');
 const InventoryService      = require('../../src/services/inventory.service');
-const ConcurrentUpdateError = require('../../src/models/errors/ConcurrentUpdateError');
-const NotFoundError         = require('../../src/models/errors/NotFoundError');
+const ConcurrentUpdateError = require('../../src/errors/ConcurrentUpdateError');
+const NotFoundError         = require('../../src/errors/NotFoundError');
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 

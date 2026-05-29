@@ -4,7 +4,7 @@ const router   = require('express').Router();
 const ctrl     = require('../controllers/product.controller');
 const auth     = require('../middlewares/auth.middleware');
 const validate = require('../middlewares/validate.middleware');
-const { createProductSchema, updateProductSchema } = require('../models/schemas/product.schema');
+const { createProductSchema, updateProductSchema } = require('../schemas/product.schema');
 
 // ── CRUD
 router.get   ('/',     auth(['ADMIN', 'MANAGER', 'WAREHOUSE', 'VIEWER']), ctrl.listProducts);

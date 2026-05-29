@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
 
 @Component({
-  selector: 'app-root',
-  template: '<router-outlet></router-outlet>',
-  styles: [`:host { display: block; height: 100%; }`],
+    selector: 'app-root',
+    template: '<router-outlet></router-outlet>',
+    styles: [`:host { display: block; height: 100%; }`],
+    standalone: false
 })
 export class AppComponent {}

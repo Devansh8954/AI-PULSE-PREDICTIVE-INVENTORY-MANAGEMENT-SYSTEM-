@@ -93,14 +93,16 @@ AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-/
 │   ├── src/
 │   │   ├── app.js                  ← Express app setup (middleware registration)
 │   │   ├── server.js               ← HTTP server entry point
-│   │   ├── config/                 ← DB config, JWT config
+│   │   ├── config/                 ← DB config, JWT config, app constants
 │   │   ├── controllers/            ← Route handlers (parse req → call service → respond)
 │   │   ├── services/               ← Business logic (TrendAnalysisService, etc.)
-│   │   ├── repositories/           ← Raw SQL / Sequelize queries
-│   │   ├── models/                 ← Sequelize model definitions + AppError classes
+│   │   ├── repositories/           ← Raw SQL / Sequelize queries (inventory + vendor)
+│   │   ├── models/                 ← Sequelize model definitions (*.model.js)
+│   │   ├── errors/                 ← Domain error classes (AppError, NotFoundError, …)
+│   │   ├── schemas/                ← Joi validation schemas (per-route request bodies)
 │   │   ├── middlewares/            ← Auth, rate limiter, error handler, validation
 │   │   ├── routes/                 ← Express router definitions
-│   │   ├── utils/                  ← Logger (Winston), helpers
+│   │   ├── utils/                  ← Logger (Winston), auth helpers
 │   │   └── scripts/                ← One-off DB seed and token generation scripts
 │   ├── tests/                      ← Jest test suites
 │   ├── .env.example                ← Template — copy to .env and fill in 2 values

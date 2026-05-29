@@ -1,13 +1,16 @@
 import { TestBed }          from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { HttpClient }        from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpClient, provideHttpClient, withInterceptorsFromDi }        from '@angular/common/http';
 import { RouterTestingModule } from '@angular/router/testing';
 import { Router }            from '@angular/router';
 import { Component }         from '@angular/core';
 import { AuthService, ROLE_ACCESS, ROLE_HOME } from './auth.service';
 
 /** Stub component required so RouterTestingModule can register the /login route */
-@Component({ template: '' })
+@Component({
+    template: '',
+    standalone: false
+})
 class LoginStubComponent {}
 
 /**
@@ -31,16 +34,14 @@ describe('AuthService', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({
-      imports: [
-        HttpClientTestingModule,
+    declarations: [LoginStubComponent],
+    imports: [
         // Register stub /login route so navigate(['/login']) in logout() doesn't throw NG04002
         RouterTestingModule.withRoutes([
-          { path: 'login', component: LoginStubComponent },
-        ]),
-      ],
-      declarations: [LoginStubComponent],
-      providers: [AuthService],
-    });
+            { path: 'login', component: LoginStubComponent },
+        ])],
+    providers: [AuthService, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()]
+});
     service  = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
   });

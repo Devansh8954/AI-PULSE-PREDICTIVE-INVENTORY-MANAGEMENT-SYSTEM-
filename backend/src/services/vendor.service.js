@@ -2,32 +2,39 @@
 
 /**
  * vendor.service.js — LAYER 2 Business Logic.
+ *
+ * Enforces the Controller → Service → Repository pattern:
+ * all DB calls go through VendorRepository, keeping this layer
+ * free of Sequelize model references.
  */
 
-const { Vendor }    = require('../models');
-const NotFoundError = require('../models/errors/NotFoundError');
+const VendorRepository = require('../repositories/vendor.repository');
+const NotFoundError    = require('../errors/NotFoundError');
 
-const listVendors = async ({ page = 1, limit = 20 }) => {
-  const offset = (Math.max(1, page) - 1) * Math.min(limit, 100);
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT     = 100;
 
-  const { rows: data, count: total } = await Vendor.findAndCountAll({
-    where:  { isActive: true },
-    limit:  Math.min(limit, 100),
+const listVendors = async ({ page = 1, limit = DEFAULT_LIMIT }) => {
+  const safeLimit = Math.min(limit, MAX_LIMIT);
+  const offset    = (Math.max(1, page) - 1) * safeLimit;
+
+  const { rows: data, count: total } = await VendorRepository.findAll({
+    limit:  safeLimit,
     offset,
-    order:  [['name', 'ASC']],
   });
 
-  return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  return {
+    data,
+    meta: { total, page, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) },
+  };
 };
 
 const getVendorById = async (id) => {
-  const vendor = await Vendor.findOne({ where: { id, isActive: true } });
+  const vendor = await VendorRepository.findById(id);
   if (!vendor) throw new NotFoundError(`Vendor '${id}' not found.`);
   return vendor;
 };
 
-const createVendor = async (dto) => {
-  return Vendor.create(dto);
-};
+const createVendor = async (dto) => VendorRepository.create(dto);
 
 module.exports = { listVendors, getVendorById, createVendor };

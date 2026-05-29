@@ -28,7 +28,7 @@ jest.mock('../../src/models', () => ({
 
 const { Product, TrendSignal } = require('../../src/models');
 const TrendAnalysisService     = require('../../src/services/TrendAnalysisService');
-const AppError                 = require('../../src/models/errors/AppError');
+const AppError                 = require('../../src/errors/AppError');
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 

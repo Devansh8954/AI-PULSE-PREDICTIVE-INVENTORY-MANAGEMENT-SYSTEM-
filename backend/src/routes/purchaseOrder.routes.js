@@ -19,7 +19,7 @@ const router   = require('express').Router();
 const ctrl     = require('../controllers/purchaseOrder.controller');
 const auth     = require('../middlewares/auth.middleware');
 const validate = require('../middlewares/validate.middleware');
-const { createPurchaseOrderSchema, updateStatusSchema } = require('../models/schemas/purchaseOrder.schema');
+const { createPurchaseOrderSchema, updateStatusSchema } = require('../schemas/purchaseOrder.schema');
 
 router.get  ('/',            auth(['ADMIN', 'MANAGER', 'WAREHOUSE', 'VIEWER']),                          ctrl.listPurchaseOrders);
 router.get  ('/:id',         auth(['ADMIN', 'MANAGER', 'WAREHOUSE']),                                    ctrl.getPurchaseOrderById);

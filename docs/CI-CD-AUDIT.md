@@ -22,10 +22,11 @@ graph LR
 
 | Job | Trigger | What it does |
 |---|---|---|
-| `backend-test` | push to `main`/`develop`, PRs | Runs all 19 Jest unit tests + generates coverage report |
+| `backend-test` | push to `main`/`develop`, PRs | Runs all 42 Jest unit tests + generates coverage report |
 | `backend-lint` | push to `main`/`develop`, PRs | ESLint check on `src/` and `tests/` |
+| `frontend-test` | push to `main`/`develop`, PRs | Karma + headless Chrome unit tests |
 | `frontend-build` | push to `main`/`develop`, PRs | Angular production build (`ng build --configuration production`) |
-| `all-checks-pass` | after all 3 complete | Gate job — fails CI if any prior job fails |
+| `all-checks-pass` | after all jobs complete | Gate job — fails CI if any critical job fails |
 
 ---
 
@@ -36,7 +37,7 @@ graph LR
 **Root cause:** `AppError` extends `Error` but didn't set `this.name`. JS's `Error` base class always has `name = 'Error'`, so the test checking `name: 'AppError'` failed.
 
 ```diff
-// backend/src/models/errors/AppError.js
+// backend/src/errors/AppError.js
   constructor(message, statusCode) {
     super(message);
 +   this.name = this.constructor.name;  // 'AppError', 'NotFoundError', etc.
@@ -48,8 +49,8 @@ graph LR
 **Test results before/after:**
 | | Before | After |
 |---|---|---|
-| Tests passing | 18/19 | **19/19 ✅** |
-| Test suites passing | 2/3 | **3/3 ✅** |
+| Tests passing | 18/19 | **42/42 ✅** |
+| Test suites passing | 2/3 | **6/6 ✅** |
 
 ---
 
@@ -133,8 +134,23 @@ graph LR
 
 | Check | Result |
 |---|---|
-| Backend unit tests | ✅ **19/19 passing** |
+| Backend unit tests | ✅ **42/42 passing** |
 | Frontend dev build | ✅ **Succeeds** |
 | Frontend production build | ✅ **Succeeds (exit 0)** |
 | ESLint errors | ✅ **0 errors** |
-| CI/CD pipeline | ✅ **Created & ready** |
+| CI/CD pipeline | ✅ **8 jobs configured** |
+
+---
+
+## 📁 File Reorganisation (2026-05-29)
+
+| Change | From | To |
+|--------|------|----|
+| Moved (misplaced at root) | `ci_cd_audit_report.md` | `docs/CI-CD-AUDIT.md` |
+| Renamed (clearer name) | `docs/CODEBASE-GUIDE-PART1-BACKEND.md` | `docs/BACKEND-ARCHITECTURE.md` |
+| Renamed (clearer name) | `docs/CODEBASE-GUIDE-PART2-FRONTEND.md` | `docs/FRONTEND-ARCHITECTURE.md` |
+| Promoted (not a Sequelize model) | `src/models/errors/` | `src/errors/` |
+| Promoted (not a Sequelize model) | `src/models/schemas/` | `src/schemas/` |
+| Created (missing layer) | — | `src/repositories/vendor.repository.js` |
+| Deleted (redundant, covered inline) | `backend/README-RATE-LIMITER.md` | — |
+

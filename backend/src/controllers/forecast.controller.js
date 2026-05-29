@@ -8,7 +8,7 @@
 
 const { Op }                          = require('sequelize');
 const { Product, Inventory, TrendSignal } = require('../models');
-const NotFoundError                   = require('../models/errors/NotFoundError');
+const NotFoundError                   = require('../errors/NotFoundError');
 
 const getForecast = async (req, res, next) => {
   try {

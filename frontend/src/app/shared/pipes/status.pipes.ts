@@ -9,7 +9,10 @@ import { Pipe, PipeTransform } from '@angular/core';
  *
  * Usage: {{ row.status | statusIcon }}
  */
-@Pipe({ name: 'statusIcon' })
+@Pipe({
+    name: 'statusIcon',
+    standalone: false
+})
 export class StatusIconPipe implements PipeTransform {
   private static readonly MAP: Record<string, string> = {
     pending:    'schedule',
@@ -45,7 +48,10 @@ export class StatusIconPipe implements PipeTransform {
  *
  * Usage: [ngClass]="row.status | statusClass"
  */
-@Pipe({ name: 'statusClass' })
+@Pipe({
+    name: 'statusClass',
+    standalone: false
+})
 export class StatusClassPipe implements PipeTransform {
   private static readonly MAP: Record<string, string> = {
     pending:    'badge--gold',

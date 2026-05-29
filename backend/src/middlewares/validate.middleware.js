@@ -13,7 +13,7 @@
  *   router.post('/', validate(createProductSchema), ctrl.createProduct);
  */
 
-const ValidationError = require('../models/errors/ValidationError');
+const ValidationError = require('../errors/ValidationError');
 
 const validate = (schema) => {
   return (req, _res, next) => {

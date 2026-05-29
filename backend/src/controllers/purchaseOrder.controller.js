@@ -11,7 +11,7 @@
 
 const PurchaseOrder   = require('../models/purchaseOrder.model');
 const Vendor          = require('../models/vendor.model');
-const AppError        = require('../models/errors/AppError');
+const AppError        = require('../errors/AppError');
 
 // ── Utility: generate PO number ───────────────────────────────────────────────
 const generatePoNumber = async () => {

@@ -3,7 +3,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 // ── Angular Material ──────────────────────────────────────────────────────────
 import { MatTableModule }           from '@angular/material/table';
@@ -39,54 +39,43 @@ import { ManagerDashboardComponent }   from './features/manager-dashboard/manage
 import { AnalystDashboardComponent }   from './features/analyst-dashboard/analyst-dashboard.component';
 import { WarehouseDashboardComponent } from './features/warehouse-dashboard/warehouse-dashboard.component';
 
-@NgModule({
-  declarations: [
-    AppComponent,
-
-    // Layout
-    ShellComponent,
-    SidebarComponent,
-
-    // Shared reusable components
-    LoadingRowComponent,
-
-    // Shared pipes
-    StatusIconPipe,
-    StatusClassPipe,
-
-    // Pages
-    LoginComponent,
-    DashboardComponent,
-    ManagerDashboardComponent,
-    AnalystDashboardComponent,
-    WarehouseDashboardComponent,
-  ],
-  imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
-    CommonModule,
-    ReactiveFormsModule,
-    FormsModule,
-    HttpClientModule,
-    AppRoutingModule,
-
-    // Angular Material
-    MatTableModule,
-    MatSortModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatButtonModule,
-    MatIconModule,
-    MatChipsModule,
-    MatProgressSpinnerModule,
-    MatSnackBarModule,
-    MatTooltipModule,
-    MatSelectModule,
-  ],
-  providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
-    RoleGuard,
-  ],
-  bootstrap: [AppComponent],
-})
+@NgModule({ declarations: [
+        AppComponent,
+        // Layout
+        ShellComponent,
+        SidebarComponent,
+        // Shared reusable components
+        LoadingRowComponent,
+        // Shared pipes
+        StatusIconPipe,
+        StatusClassPipe,
+        // Pages
+        LoginComponent,
+        DashboardComponent,
+        ManagerDashboardComponent,
+        AnalystDashboardComponent,
+        WarehouseDashboardComponent,
+    ],
+    bootstrap: [AppComponent], imports: [BrowserModule,
+        BrowserAnimationsModule,
+        CommonModule,
+        ReactiveFormsModule,
+        FormsModule,
+        AppRoutingModule,
+        // Angular Material
+        MatTableModule,
+        MatSortModule,
+        MatInputModule,
+        MatFormFieldModule,
+        MatButtonModule,
+        MatIconModule,
+        MatChipsModule,
+        MatProgressSpinnerModule,
+        MatSnackBarModule,
+        MatTooltipModule,
+        MatSelectModule], providers: [
+        { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+        RoleGuard,
+        provideHttpClient(withInterceptorsFromDi()),
+    ] })
 export class AppModule {}

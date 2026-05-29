@@ -24,9 +24,9 @@ jest.mock('../../src/utils/logger', () => ({
 }));
 
 const errorHandler      = require('../../src/middlewares/errorHandler.middleware');
-const AppError          = require('../../src/models/errors/AppError');
-const NotFoundError     = require('../../src/models/errors/NotFoundError');
-const ConcurrentUpdateError = require('../../src/models/errors/ConcurrentUpdateError');
+const AppError          = require('../../src/errors/AppError');
+const NotFoundError     = require('../../src/errors/NotFoundError');
+const ConcurrentUpdateError = require('../../src/errors/ConcurrentUpdateError');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
