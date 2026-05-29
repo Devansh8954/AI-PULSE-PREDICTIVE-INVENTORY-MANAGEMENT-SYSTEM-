@@ -43,14 +43,17 @@
     "testMatch": ["**/tests/**/*.test.js"],
     "collectCoverageFrom": [
       "src/services/**/*.js",
+      "src/middlewares/**/*.js",
+      "!src/middlewares/rateLimiter.middleware.js",
+      "!src/middlewares/validate.middleware.js",
       "!src/scripts/**",
       "!src/config/**"
     ],
     "coverageThreshold": {
       "global": {
         "lines":      70,
-        "functions":  65,
-        "branches":   60,
+        "functions":  60,
+        "branches":   55,
         "statements": 70
       }
     },

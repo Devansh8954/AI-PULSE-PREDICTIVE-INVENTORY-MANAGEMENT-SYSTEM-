@@ -25,7 +25,6 @@
 const { QueryTypes } = require('sequelize');
 const { sequelize }  = require('../config/db.config');
 const { Inventory }  = require('../models');
-const NotFoundError  = require('../models/errors/NotFoundError');
 
 // ── findById ─────────────────────────────────────────────────────────────────
 

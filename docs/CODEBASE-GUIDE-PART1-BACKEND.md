@@ -426,19 +426,21 @@ File: `.github/workflows/ci.yml`
 ```
 Push to main / Pull Request to main
          │
-    ┌────┴────────────────────────────┐
-    │                                 │
- Backend track                  Frontend track
-    │                                 │
- 1. backend-lint (ESLint)      4. frontend-lint (tsc --noEmit)
-    │                                 │
- 2. backend-test (Jest + cov)  5. frontend-build (ng build --prod)
-    │                                 │
- 3. backend-audit (npm audit)  6. frontend-audit (npm audit)
-    │                                 │
-    └──────────────────┬──────────────┘
+    ┌────┴────────────────────────────────┐
+    │                                     │
+ Backend track                      Frontend track
+    │                                     │
+ 1. backend-lint (ESLint)         4. frontend-lint (tsc --noEmit)
+    │                                     │
+ 2. backend-test (Jest + cov)    5. frontend-test (Karma + Chrome)
+    │                                     │
+ 3. backend-audit (npm audit)    6. frontend-build (ng build --prod)
+                                          │
+                                 7. frontend-audit (npm audit)
+    │                                     │
+    └──────────────────┬──────────────────┘
                        │
-              7. all-checks-pass
+              8. all-checks-pass
               (gate job — blocks merge if critical jobs fail)
 ```
 
@@ -450,19 +452,20 @@ Push to main / Pull Request to main
 | `backend-test` | Jest unit tests + coverage enforcement | Yes |
 | `backend-audit` | `npm audit --audit-level=high` — no high/critical CVEs | Yes |
 | `frontend-lint` | `tsc --noEmit` — TypeScript type check | Yes |
+| `frontend-test` | Karma + headless Chrome — Angular unit tests + coverage | Yes |
 | `frontend-build` | `ng build --configuration production` | Yes |
 | `frontend-audit` | `npm audit` — Angular deps, soft fail allowed | No (warnings only) |
 
 ### Coverage Thresholds (Enforced in CI)
 
-Only **service files** are measured (controllers/middlewares need a live DB):
+Backend covers **services + auth/errorHandler middlewares** (thin wrappers like rateLimiter/validate excluded):
 
 | Metric | Threshold | Current |
 |---|---|---|
-| Statements | 70% | ~76% ✅ |
-| Functions | 65% | ~69% ✅ |
-| Branches | 60% | ~65% ✅ |
-| Lines | 70% | ~77% ✅ |
+| Statements | 70% | ~79.5% ✅ |
+| Functions | 60% | ~68.2% ✅ |
+| Branches | 55% | ~72.3% ✅ |
+| Lines | 70% | ~81.2% ✅ |
 
 ### Key CI Design Decisions
 
@@ -498,14 +501,15 @@ Last verified: May 2026
 
 ```
 Backend:
-  ✅ npm run lint    → 0 errors, 9 warnings (all process.exit in scripts)
-  ✅ npm run test    → 19/19 tests pass, 3/3 suites
-  ✅ Coverage        → 76.59% statements (threshold: 70%)
-  ✅ 24/24 modules load cleanly (verified via node -e require())
+  ✅ npm run lint    → 0 errors, 0 warnings
+  ✅ npm run test    → 42/42 tests pass, 6/6 suites
+  ✅ Coverage        → 81.2% lines | 79.5% stmts | 72.3% branches | 68.2% funcs
+  ✅ npm audit       → 0 high/critical (2 moderate in Sequelize internals — upstream fix pending)
 
 Frontend:
   ✅ tsc --noEmit   → 0 TypeScript errors
-  ✅ ng build --prod → production bundle builds cleanly
+  ✅ ng build --prod → clean production bundle (1.26 MB initial, 266 KB gzipped)
+  ✅ Unit tests      → auth.guard, role.guard, auth.service specs pass
 
 Security:
   ✅ git history scrubbed (no passwords in any commit)
@@ -513,7 +517,9 @@ Security:
   ✅ .env.example has placeholder values only
 
 CI/CD:
-  ✅ GitHub Actions pipeline configured (7 jobs)
-  ✅ Coverage thresholds enforced
+  ✅ GitHub Actions pipeline configured (8 jobs)
+  ✅ Frontend unit tests (Karma + headless Chrome) added to CI
+  ✅ Coverage reports uploaded as artifacts on every run
   ✅ Security audit on every push
+  ✅ Gate job blocks merges if any critical job fails
 ```

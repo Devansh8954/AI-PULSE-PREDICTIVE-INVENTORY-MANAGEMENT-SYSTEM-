@@ -20,9 +20,9 @@ env:
 # ─────────────────────────────────────────────────────────────────────────────
 jobs:
 
-  # ══════════════════════════════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════════════════
   # JOB 1 — Backend: Lint
-  # ══════════════════════════════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════════════════
   backend-lint:
     name: 🔍 Backend — ESLint
     runs-on: ubuntu-latest
@@ -47,9 +47,9 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-  # ══════════════════════════════════════════════════════════════════════════
-  # JOB 2 — Backend: Unit Tests + Coverage
-  # ══════════════════════════════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 2 — Backend: Unit Tests + Coverage Gate
+  # ════════════════════════════════════════════════════════════════════════════
   backend-test:
     name: 🧪 Backend — Unit Tests & Coverage
     runs-on: ubuntu-latest
@@ -84,6 +84,22 @@ jobs:
           DB_USER: root
           DB_PASSWORD: ci-test-placeholder
 
+      - name: Publish coverage summary
+        if: always()
+        run: |
+          echo "## 🧪 Backend Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat coverage/coverage-summary.json 2>/dev/null | \
+            node -e "
+              const fs=require('fs');
+              const d=JSON.parse(fs.readFileSync('/dev/stdin','utf8')).total;
+              console.log('Lines:      ' + d.lines.pct + '%');
+              console.log('Functions:  ' + d.functions.pct + '%');
+              console.log('Branches:   ' + d.branches.pct + '%');
+              console.log('Statements: ' + d.statements.pct + '%');
+            " 2>/dev/null || echo "Coverage summary not available"
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         if: always()
@@ -92,9 +108,9 @@ jobs:
           path: backend/coverage/
           retention-days: 14
 
-  # ══════════════════════════════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════════════════
   # JOB 3 — Backend: Security Audit
-  # ══════════════════════════════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════════════════
   backend-audit:
     name: 🔒 Backend — Security Audit
     runs-on: ubuntu-latest
@@ -120,9 +136,9 @@ jobs:
         run: npm audit --audit-level=high --omit=dev
         continue-on-error: false
 
-  # ══════════════════════════════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════════════════
   # JOB 4 — Frontend: Lint
-  # ══════════════════════════════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════════════════
   frontend-lint:
     name: 🔍 Frontend — ESLint / ng lint
     runs-on: ubuntu-latest
@@ -144,16 +160,75 @@ jobs:
       - name: Install dependencies
         run: npm ci --prefer-offline
 
-      - name: TypeScript type-check
+      - name: TypeScript type-check + ESLint
         run: npm run lint
 
-  # ══════════════════════════════════════════════════════════════════════════
-  # JOB 5 — Frontend: Build (production)
-  # ══════════════════════════════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 5 — Frontend: Unit Tests + Coverage (NEW)
+  # Runs Karma tests headlessly via Chrome in the CI container.
+  # Coverage threshold: 60% lines/functions/branches/statements.
+  # ════════════════════════════════════════════════════════════════════════════
+  frontend-test:
+    name: 🧪 Frontend — Karma Unit Tests & Coverage
+    runs-on: ubuntu-latest
+    needs: frontend-lint
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Chrome (headless)
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Run unit tests with coverage (headless Chrome)
+        run: npm run test:ci
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+
+      - name: Publish coverage summary
+        if: always()
+        run: |
+          echo "## 🧪 Frontend Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat coverage/ai-pulse-frontend/coverage-summary.json 2>/dev/null | \
+            node -e "
+              const fs=require('fs');
+              const d=JSON.parse(fs.readFileSync('/dev/stdin','utf8')).total;
+              console.log('Lines:      ' + d.lines.pct + '%');
+              console.log('Functions:  ' + d.functions.pct + '%');
+              console.log('Branches:   ' + d.branches.pct + '%');
+              console.log('Statements: ' + d.statements.pct + '%');
+            " 2>/dev/null || echo "Coverage summary not available"
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage-${{ github.run_number }}
+          path: frontend/coverage/
+          retention-days: 14
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 6 — Frontend: Production Build
+  # ════════════════════════════════════════════════════════════════════════════
   frontend-build:
     name: 🏗️ Frontend — Angular Production Build
     runs-on: ubuntu-latest
-    needs: frontend-lint
+    needs: frontend-test
     defaults:
       run:
         working-directory: frontend
@@ -194,9 +269,9 @@ jobs:
           path: frontend/dist/
           retention-days: 14
 
-  # ══════════════════════════════════════════════════════════════════════════
-  # JOB 6 — Frontend: Security Audit
-  # ══════════════════════════════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 7 — Frontend: Security Audit
+  # ════════════════════════════════════════════════════════════════════════════
   frontend-audit:
     name: 🔒 Frontend — Security Audit
     runs-on: ubuntu-latest
@@ -222,9 +297,9 @@ jobs:
         run: npm audit --audit-level=high --omit=dev
         continue-on-error: true   # Angular deps frequently have low-severity advisories
 
-  # ══════════════════════════════════════════════════════════════════════════
-  # JOB 7 — All CI Checks Gate (branch protection requirement)
-  # ══════════════════════════════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 8 — All CI Checks Gate (branch protection requirement)
+  # ════════════════════════════════════════════════════════════════════════════
   all-checks-pass:
     name: ✅ All CI Checks Passed
     runs-on: ubuntu-latest
@@ -234,6 +309,7 @@ jobs:
       - backend-test
       - backend-audit
       - frontend-lint
+      - frontend-test
       - frontend-build
       - frontend-audit
 
@@ -243,16 +319,18 @@ jobs:
           echo "## CI Run Summary" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| backend-lint   | ${{ needs.backend-lint.result }}   |" >> $GITHUB_STEP_SUMMARY
-          echo "| backend-test   | ${{ needs.backend-test.result }}   |" >> $GITHUB_STEP_SUMMARY
-          echo "| backend-audit  | ${{ needs.backend-audit.result }}  |" >> $GITHUB_STEP_SUMMARY
-          echo "| frontend-lint  | ${{ needs.frontend-lint.result }}  |" >> $GITHUB_STEP_SUMMARY
-          echo "| frontend-build | ${{ needs.frontend-build.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| frontend-audit | ${{ needs.frontend-audit.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| backend-lint    | ${{ needs.backend-lint.result }}    |" >> $GITHUB_STEP_SUMMARY
+          echo "| backend-test    | ${{ needs.backend-test.result }}    |" >> $GITHUB_STEP_SUMMARY
+          echo "| backend-audit   | ${{ needs.backend-audit.result }}   |" >> $GITHUB_STEP_SUMMARY
+          echo "| frontend-lint   | ${{ needs.frontend-lint.result }}   |" >> $GITHUB_STEP_SUMMARY
+          echo "| frontend-test   | ${{ needs.frontend-test.result }}   |" >> $GITHUB_STEP_SUMMARY
+          echo "| frontend-build  | ${{ needs.frontend-build.result }}  |" >> $GITHUB_STEP_SUMMARY
+          echo "| frontend-audit  | ${{ needs.frontend-audit.result }}  |" >> $GITHUB_STEP_SUMMARY
 
           # Hard-fail on critical jobs
           if [[ "${{ needs.backend-lint.result }}"   != "success" ||
                 "${{ needs.backend-test.result }}"   != "success" ||
+                "${{ needs.frontend-test.result }}"  != "success" ||
                 "${{ needs.frontend-build.result }}" != "success" ]]; then
             echo ""
             echo "❌ Critical CI job(s) failed — merge blocked." | tee -a $GITHUB_STEP_SUMMARY

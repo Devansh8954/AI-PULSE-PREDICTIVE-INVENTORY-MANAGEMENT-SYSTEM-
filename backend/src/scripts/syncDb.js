@@ -1,4 +1,5 @@
 'use strict';
+/* eslint-disable no-process-exit */
 
 /**
  * syncDb.js — Developer utility script.

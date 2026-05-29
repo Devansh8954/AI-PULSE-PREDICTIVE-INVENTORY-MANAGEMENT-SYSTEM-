@@ -1,4 +1,5 @@
 'use strict';
+/* eslint-disable no-process-exit */
 /**
  * fixAndSeedUsers.js
  * 1. ALTERs users.role ENUM to include WAREHOUSE

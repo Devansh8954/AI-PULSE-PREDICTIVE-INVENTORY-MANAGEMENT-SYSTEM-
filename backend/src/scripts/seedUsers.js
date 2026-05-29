@@ -1,4 +1,5 @@
 'use strict';
+/* eslint-disable no-process-exit */
 
 /**
  * seedUsers.js — Developer utility script.

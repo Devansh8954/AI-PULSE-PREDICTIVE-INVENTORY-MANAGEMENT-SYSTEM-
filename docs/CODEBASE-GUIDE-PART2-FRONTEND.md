@@ -334,7 +334,43 @@ Without `takeUntil`, subscriptions keep running even after the component is dest
 
 ---
 
-## 30. Chart.js Integration (Analyst Dashboard)
+## 30. Angular Unit Testing (Karma + Jasmine)
+
+Angular unit tests live alongside the source files as `.spec.ts` files.
+All external dependencies (Router, HttpClient, AuthService) are replaced with Jasmine spy objects — no live server needed.
+
+### Test Files
+
+| Spec File | What It Tests | Key Assertions |
+|---|---|---|
+| `auth.guard.spec.ts` | `AuthGuard.canActivate()` | Logged-in → true; unauthenticated → false + navigate `/login` |
+| `role.guard.spec.ts` | `RoleGuard.canActivate()` | Correct role → true; wrong role → false + redirect to homeRoute |
+| `auth.service.spec.ts` | `AuthService` full | ROLE_ACCESS map, ROLE_HOME map, `canAccess()`, `isLoggedIn`, `login()`, `logout()`, `user$` observable |
+
+### Key Patterns
+
+```typescript
+// All external dependencies are spy objects — no real HTTP or routing
+const authSpy = jasmine.createSpyObj('AuthService', ['canAccess'], { isLoggedIn: false });
+const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+
+// Spy on getter to control isLoggedIn value per test
+(Object.getOwnPropertyDescriptor(authService, 'isLoggedIn')!.get as jasmine.Spy)
+  .and.returnValue(true);
+
+// HttpClientTestingModule intercepts HTTP calls for auth.service tests
+const req = httpMock.expectOne(r => r.url.includes('/auth/login'));
+req.flush({ data: { token: 'jwt-token', user: mockUser } });
+```
+
+### Run in CI
+```bash
+npm run test:ci   # Headless Chrome, code coverage enabled
+```
+
+---
+
+## 31. Chart.js Integration (Analyst Dashboard)
 
 ```typescript
 // Charts are initialized ONCE in ngAfterViewInit
@@ -444,8 +480,12 @@ node src/scripts/generate-token.js ADMIN
 | `frontend/src/app/core/services/auth.service.ts` | Service | Login/logout + RBAC + state |
 | `frontend/src/app/core/services/inventory.service.ts` | Service | HTTP calls for inventory + POs |
 | `frontend/src/app/core/guards/auth.guard.ts` | Guard | Blocks unauthenticated users |
+| `frontend/src/app/core/guards/auth.guard.spec.ts` | Test | AuthGuard unit tests |
 | `frontend/src/app/core/guards/role.guard.ts` | Guard | Blocks wrong-role users |
+| `frontend/src/app/core/guards/role.guard.spec.ts` | Test | RoleGuard unit tests |
 | `frontend/src/app/core/interceptors/auth.interceptor.ts` | Interceptor | Injects JWT + handles 401 |
+| `frontend/src/app/core/services/auth.service.ts` | Service | Login/logout + RBAC + state |
+| `frontend/src/app/core/services/auth.service.spec.ts` | Test | AuthService unit tests |
 | `frontend/src/app/shared/components/shell/` | Layout | Sidebar + router-outlet wrapper |
 | `frontend/src/app/shared/components/sidebar/` | Layout | Role-filtered navigation panel |
 | `frontend/src/app/shared/components/loading-row/` | Shared UI | Reusable spinner row |

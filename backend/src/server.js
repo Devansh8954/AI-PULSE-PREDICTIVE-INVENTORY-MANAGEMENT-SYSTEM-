@@ -19,7 +19,7 @@ const startServer = async () => {
     });
   } catch (err) {
     logger.error('❌  Failed to connect to database. Server will not start.', err);
-    process.exit(1);
+    process.exit(1); // eslint-disable-line no-process-exit
   }
 };
 
