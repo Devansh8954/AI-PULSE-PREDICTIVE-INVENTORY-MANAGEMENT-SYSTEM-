@@ -1,6 +1,8 @@
 import { TestBed }          from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { HttpClient }        from '@angular/common/http';
 import { RouterTestingModule } from '@angular/router/testing';
+import { Router }            from '@angular/router';
 import { AuthService, ROLE_ACCESS, ROLE_HOME } from './auth.service';
 
 /**
@@ -86,23 +88,21 @@ describe('AuthService', () => {
     expect(service.canAccess('/dashboard')).toBeFalse();
   });
 
-  it('canAccess() should return true for ADMIN on any route', () => {
-    localStorage.setItem('ai_pulse_user', JSON.stringify({ id: 'u1', role: 'ADMIN', name: 'Admin', email: 'a@a.com' }));
-    // Re-instantiate to reload user from localStorage
-    service = new (AuthService as any)(
-      TestBed.inject(require('@angular/common/http').HttpClient),
-      TestBed.inject(require('@angular/router').Router),
-    );
+  it('canAccess() should return true for ADMIN on /dashboard', () => {
+    localStorage.setItem('ai_pulse_user', JSON.stringify({
+      id: 'u1', role: 'ADMIN', name: 'Admin', email: 'a@a.com',
+    }));
+    // Re-instantiate to pick up the localStorage user
+    service = new AuthService(TestBed.inject(HttpClient), TestBed.inject(Router));
     expect(service.canAccess('/dashboard')).toBeTrue();
     expect(service.canAccess('/warehouse')).toBeTrue();
   });
 
   it('canAccess() should return false for WAREHOUSE on /dashboard', () => {
-    localStorage.setItem('ai_pulse_user', JSON.stringify({ id: 'u2', role: 'WAREHOUSE', name: 'WH', email: 'w@w.com' }));
-    service = new (AuthService as any)(
-      TestBed.inject(require('@angular/common/http').HttpClient),
-      TestBed.inject(require('@angular/router').Router),
-    );
+    localStorage.setItem('ai_pulse_user', JSON.stringify({
+      id: 'u2', role: 'WAREHOUSE', name: 'WH', email: 'w@w.com',
+    }));
+    service = new AuthService(TestBed.inject(HttpClient), TestBed.inject(Router));
     expect(service.canAccess('/dashboard')).toBeFalse();
     expect(service.canAccess('/warehouse')).toBeTrue();
   });
