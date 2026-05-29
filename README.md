@@ -330,6 +330,6 @@ See `backend/.env.example` for the full list. The only two you must set are:
 
 <div align="center">
 
-Built as a **Senior SDE-1 portfolio project** to demonstrate full-stack architecture, AI integration, and production-grade engineering patterns.
+Built as a **SDE-1 portfolio project** to demonstrate full-stack architecture, AI integration, and production-grade engineering patterns.
 
 </div>
