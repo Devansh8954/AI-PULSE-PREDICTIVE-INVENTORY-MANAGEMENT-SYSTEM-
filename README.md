@@ -3,7 +3,7 @@
 # ⚡ AI-Pulse
 ### Predictive Inventory Management System
 
-[![Node.js](https://img.shields.io/badge/Node.js-18.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Angular](https://img.shields.io/badge/Angular-17.x-DD0031?logo=angular&logoColor=white)](https://angular.io/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

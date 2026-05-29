@@ -307,7 +307,7 @@ WHERE
 > 1. **Install dependencies** — `npm ci` (clean install, faster than `npm install`)
 > 2. **Lint** — ESLint checks for code style violations
 > 3. **Unit tests** — Jest runs all test files
-> 4. **Coverage gate** — Jest checks that line coverage ≥ 70%, function coverage ≥ 65%, branch coverage ≥ 60%. If coverage drops below threshold, the pipeline fails.
+> 4. **Coverage gate** — Jest checks that line coverage ≥ 70%, function coverage ≥ 60%, branch coverage ≥ 55%. If coverage drops below threshold, the pipeline fails.
 > 5. **Security audit** — `npm audit` checks for known vulnerabilities in dependencies
 >
 > This ensures no code with broken tests or security issues gets merged.
