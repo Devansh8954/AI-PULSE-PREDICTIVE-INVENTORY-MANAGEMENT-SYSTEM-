@@ -123,7 +123,7 @@ Return between 3 and 8 products. Order by trendScore descending.
  */
 const callGeminiAI = async (keyword) => {
   const genAI = getGeminiClient();
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   logger.info(`[TrendAnalysis] Calling Gemini AI for keyword: "${keyword}"`);
 

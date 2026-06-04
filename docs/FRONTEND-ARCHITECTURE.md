@@ -1,560 +1,762 @@
-# AI-Pulse — Complete Codebase Guide
-## PART 2: Frontend + Shared Patterns + Interview Q&A
+# AI-Pulse — Frontend Architecture Guide
+## Complete Explanation From Basics
 
 ---
 
-## 15. Frontend Folder Structure
+## 1. What Is the Frontend?
+
+The **frontend** is everything the user sees in the browser. It is a **Single Page Application (SPA)** — meaning the browser loads ONE HTML file once, and Angular takes over, swapping content dynamically without full page reloads.
+
+Our frontend is built with **Angular 17** (TypeScript framework). It talks to the backend over HTTP using Angular's `HttpClient`.
+
+---
+
+## 2. What Is Angular?
+
+**Angular** is a JavaScript framework made by Google for building web applications. Key concepts:
+
+| Concept | Plain English |
+|---|---|
+| **Component** | A reusable UI block — has HTML template + TypeScript logic + CSS styles |
+| **Module** | A container that groups related components, services, and pipes |
+| **Service** | A shared class for logic and data — injected into components |
+| **Guard** | A class that can block navigation to a route |
+| **Interceptor** | A class that intercepts every HTTP request/response |
+| **Pipe** | A function that transforms a value in a template (`{{ date \| date:'short' }}`) |
+| **Observable** | A stream of values over time — Angular uses RxJS for this |
+| **Directive** | Instructions that extend HTML (`*ngIf`, `*ngFor`, `[class.active]`) |
+
+---
+
+## 3. Tech Stack Used in the Frontend
+
+| Tool | What It Is | Why |
+|---|---|---|
+| **Angular 17** | Component-based SPA framework | Reactive, strongly typed, great for complex dashboards |
+| **TypeScript** | JavaScript with types | Catches bugs at compile time, not runtime |
+| **Angular Material** | Google's UI component library | Pre-built table, form field, button, tooltip components |
+| **RxJS** | Reactive programming library | Handles async data streams (HTTP calls, real-time updates) |
+| **Chart.js** | Canvas-based charting library | Powers the bar chart and doughnut chart in dashboards |
+| **SCSS** | Enhanced CSS with variables, nesting | Makes CSS maintainable and DRY |
+
+---
+
+## 4. Folder Structure — Every File and Folder Explained
 
 ```
 frontend/src/app/
-├── app.module.ts            ← Registers ALL components, pipes, modules
-├── app-routing.module.ts    ← URL → Component mapping + guards
-├── app.component.ts         ← Root component (just a router-outlet wrapper)
 │
-├── core/                    ← Singleton services, guards, interceptors
+├── app.module.ts          ← Registers EVERY component, service, module used in the app
+├── app-routing.module.ts  ← Maps URLs (/dashboard, /login) to components
+├── app.component.ts       ← Root component — just wraps <router-outlet>
+│
+├── core/                  ← Singleton services (loaded once, shared everywhere)
 │   ├── guards/
-│   │   ├── auth.guard.ts    ← Blocks unauthenticated users
-│   │   └── role.guard.ts    ← Blocks wrong-role users
+│   │   ├── auth.guard.ts       ← Blocks unauthenticated users from protected pages
+│   │   └── role.guard.ts       ← Blocks users with wrong roles from pages
 │   ├── interceptors/
-│   │   └── auth.interceptor.ts  ← Adds JWT to every HTTP request
+│   │   └── auth.interceptor.ts ← Adds JWT token to EVERY HTTP request automatically
 │   └── services/
-│       ├── auth.service.ts      ← Login, logout, token storage
-│       ├── inventory.service.ts ← Inventory + PO API calls
-│       ├── forecast.service.ts  ← Forecast API calls
-│       └── trend.service.ts     ← Trend analysis API calls
+│       ├── auth.service.ts     ← Login, logout, token storage, user state
+│       ├── trend.service.ts    ← API calls for AI analysis + trend signals
+│       ├── inventory.service.ts← API calls for stock, purchase orders
+│       └── forecast.service.ts ← API calls for demand forecasts
 │
-├── features/                ← One folder per role dashboard
-│   ├── login/               ← Login page
-│   ├── dashboard/           ← Admin Command Center
-│   ├── manager-dashboard/   ← Purchase orders + stock alerts
-│   ├── analyst-dashboard/   ← Forecast charts + CSV export
-│   └── warehouse-dashboard/ ← Bin inventory + PO dispatch/receive
+├── features/              ← One folder per dashboard/page
+│   ├── login/             ← Login page component
+│   ├── dashboard/         ← Admin dashboard (AI search + signals table)
+│   ├── manager-dashboard/ ← Manager: stock alerts + purchase orders
+│   ├── analyst-dashboard/ ← Analyst: forecast charts + CSV export
+│   └── warehouse-dashboard/ ← Warehouse: bin inventory + PO dispatch
 │
-└── shared/                  ← Reusable pieces used by multiple features
+└── shared/                ← Reusable pieces used across multiple features
     ├── components/
-    │   ├── shell/           ← Page layout wrapper (sidebar + router-outlet + mobile nav)
-    │   ├── sidebar/         ← Left navigation panel
-    │   └── loading-row/     ← Reusable spinner + text row
+    │   ├── shell/         ← Page layout wrapper (sidebar + main content area)
+    │   ├── sidebar/       ← Left navigation menu
+    │   └── loading-row/   ← Reusable spinner component
+    ├── models/
+    │   └── trend.model.ts ← TypeScript interfaces for API data shapes
     ├── pipes/
-    │   └── status.pipes.ts  ← statusClass pipe + statusIcon pipe
+    │   └── status.pipes.ts← Converts status strings to CSS classes or icons
     └── styles/
-        └── dashboard-shared.scss ← CSS used by all 4 dashboards
+        └── dashboard-shared.scss ← CSS shared by all 4 dashboards
 ```
 
 ---
 
-## 16. Angular Routing — How URLs Map to Components
+## 5. How Angular Routing Works
 
-File: `app-routing.module.ts`
+**Routing** maps a browser URL to an Angular component. Defined in `app-routing.module.ts`.
 
 ```
-/login         → LoginComponent           (public, no guard)
-/              → ShellComponent           (AuthGuard required)
-  /dashboard   → DashboardComponent       (RoleGuard: ADMIN only)
-  /manager     → ManagerDashboardComponent (RoleGuard: MANAGER, ADMIN)
-  /analyst     → AnalystDashboardComponent (RoleGuard: VIEWER, MANAGER, ADMIN)
-  /warehouse   → WarehouseDashboardComponent (RoleGuard: WAREHOUSE, MANAGER, ADMIN)
-/**            → redirect to /login       (catch-all)
+URL Typed in Browser        Component That Renders
+──────────────────────      ──────────────────────
+/login               →      LoginComponent (public)
+/                    →      ShellComponent (needs auth)
+  /dashboard         →        DashboardComponent (ADMIN only)
+  /manager           →        ManagerDashboardComponent (MANAGER, ADMIN)
+  /analyst           →        AnalystDashboardComponent (VIEWER, MANAGER, ADMIN)
+  /warehouse         →        WarehouseDashboardComponent (WAREHOUSE, MANAGER, ADMIN)
+anything else        →      redirect to /login
 ```
 
-**Why ShellComponent wraps the protected routes?**
-Shell provides the sidebar and mobile nav. By nesting all protected routes inside Shell, every authenticated page automatically gets the sidebar — without repeating it in each component.
+**Why is `ShellComponent` the parent?**  
+All protected pages need a sidebar and mobile nav. Instead of putting that HTML in every dashboard, `ShellComponent` wraps them all. Its template has `<router-outlet>` where child routes load.
+
+```html
+<!-- Shell wraps everything -->
+<div class="app-shell">
+  <app-sidebar></app-sidebar>
+  <main>
+    <router-outlet></router-outlet>  ← dashboard loads here
+  </main>
+</div>
+```
 
 ---
 
-## 17. Role-Based Access Control (RBAC) — Frontend
+## 6. Route Guards — Protecting Pages
 
-Defined in `auth.service.ts`:
+### `AuthGuard` — Are You Logged In?
+
+When you navigate to `/dashboard`, `AuthGuard` runs first:
+```
+Is there a token in localStorage?
+  YES → allow navigation to the component
+  NO  → redirect to /login
+```
+
+Without guards, anyone could type `http://localhost:4200/dashboard` in the URL bar and see the admin page. The guard prevents this.
+
+### `RoleGuard` — Are You the Right Role?
+
+Even if logged in, not every user can see every page:
+```
+ADMIN    can see: /dashboard, /manager, /analyst, /warehouse
+MANAGER  can see: /manager, /analyst, /warehouse
+VIEWER   can see: /analyst only
+WAREHOUSE can see: /warehouse only
+```
+
+If a WAREHOUSE user types `/dashboard` in the URL bar, `RoleGuard` redirects them to `/warehouse` (their home route).
+
+---
+
+## 7. AuthService — Managing Login State
+
+`AuthService` manages who is currently logged in. It uses a **BehaviorSubject** to hold the current user.
+
+### What is a BehaviorSubject?
+
+A **BehaviorSubject** is an RxJS class that:
+- Holds the **current value** in memory
+- Emits that value immediately to any new subscriber
+- Emits a new value to ALL subscribers when updated
 
 ```typescript
-export const ROLE_ACCESS: Record<UserRole, string[]> = {
-  ADMIN:     ['/dashboard', '/manager', '/analyst', '/warehouse'],
-  MANAGER:   ['/manager', '/analyst', '/warehouse'],
-  VIEWER:    ['/analyst'],        // VIEWER = Analyst role in the DB
-  WAREHOUSE: ['/warehouse'],
-};
-
-export const ROLE_HOME: Record<UserRole, string> = {
-  ADMIN:     '/dashboard',
-  MANAGER:   '/manager',
-  VIEWER:    '/analyst',
-  WAREHOUSE: '/warehouse',
-};
-```
-
-**How it works end-to-end:**
-
-1. User logs in → receives JWT with `role` in payload.
-2. `AuthService` stores `{ token, user }` in `localStorage`.
-3. When navigating to `/dashboard`:
-   - `AuthGuard` checks: is there a token? No → redirect `/login`.
-   - `RoleGuard` checks: does user's role include `/dashboard` in `ROLE_ACCESS`? No → redirect to `homeRoute`.
-4. Sidebar filters nav items using `ROLE_ACCESS` — users only see dashboards they can access.
-5. Mobile bottom nav also filtered the same way.
-
----
-
-## 18. AuthService — State Management
-
-`AuthService` uses a `BehaviorSubject` to hold the current user:
-
-```typescript
+// In AuthService:
 private readonly _user$ = new BehaviorSubject<AuthUser | null>(this.loadUser());
-readonly user$ = this._user$.asObservable();
+readonly user$ = this._user$.asObservable(); // exposed as read-only
+
+// When user logs in:
+this._user$.next(loggedInUser); // ALL subscribers react automatically
+
+// Sidebar subscribes and re-renders:
+this.authService.user$.subscribe(user => {
+  this.currentUser = user; // sidebar shows new name/role
+});
 ```
 
-- `BehaviorSubject` emits the **current value immediately** to any new subscriber.
-- `loadUser()` reads from `localStorage` on app startup — so session persists across page refreshes.
-- `login()` stores token + user, emits new value to all subscribers (sidebar, shell, guards all react).
-- `logout()` clears localStorage, emits `null`, navigates to `/login`.
+**vs Regular Subject:** A regular Subject only emits to subscribers who were listening BEFORE the value was set. BehaviorSubject always gives the latest value to any new subscriber — perfect for "current logged-in user" state.
+
+### Full Login Flow
+
+```
+1. User submits form → loginComponent calls authService.login(email, password)
+2. AuthService sends: POST /api/v1/auth/login
+3. Response: { token: "eyJ...", user: { id, name, email, role } }
+4. AuthService stores in localStorage:
+     localStorage.setItem('ai_pulse_token', token)
+     localStorage.setItem('ai_pulse_user', JSON.stringify(user))
+5. _user$.next(user) → all subscribers (sidebar, guards) react
+6. Router navigates to ROLE_HOME[user.role] (/dashboard for ADMIN)
+```
+
+**Why localStorage?**  
+Survives page refresh. If you store in memory only, refreshing the page logs you out.
+
+### Logout Flow
+
+```
+authService.logout()
+  1. localStorage.removeItem('ai_pulse_token')
+  2. localStorage.removeItem('ai_pulse_user')
+  3. _user$.next(null) → all subscribers show "no user"
+  4. router.navigate(['/login'])
+```
 
 ---
 
-## 19. AuthInterceptor — Automatic JWT Injection
+## 8. AuthInterceptor — Automatic JWT Injection
 
-File: `core/interceptors/auth.interceptor.ts`
-
-Every HTTP request automatically gets the JWT header:
-
-```
-Before:  GET /api/v1/inventory
-After:   GET /api/v1/inventory
-         Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-Also handles 401 globally:
-- If any API call returns 401 → clears localStorage → navigates to `/login`.
-- This means if the token expires mid-session, the user is automatically logged out.
-
----
-
-## 20. HTTP Services Pattern
-
-Each service follows the same pattern:
+Every HTTP request needs a JWT token header. Without an interceptor, you'd add it manually in every service method. With an interceptor, it happens automatically.
 
 ```typescript
-// inventory.service.ts example
-getVendors(): Observable<any[]> {
-  return this.http.get<any>(`${this.base}/vendors`).pipe(
-    map(res => res.data ?? [])    // unwrap the { success, data } envelope
+// How it works:
+intercept(req: HttpRequest<unknown>, next: HttpHandler) {
+  const token = localStorage.getItem('ai_pulse_token');
+
+  // Clone the request (requests are immutable) and add the header
+  const authReq = token
+    ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+    : req;
+
+  return next.handle(authReq).pipe(
+    catchError((err: HttpErrorResponse) => {
+      if (err.status === 401) {
+        // Token expired mid-session → auto logout
+        localStorage.clear();
+        this.router.navigate(['/login']);
+      }
+      return throwError(() => err);
+    })
   );
 }
 ```
 
-**`InventoryService` also uses BehaviorSubjects for shared state:**
-
-```typescript
-private readonly _alerts$ = new BehaviorSubject<InventoryRecord[]>([]);
-readonly alerts$ = this._alerts$.asObservable();
+**Before interceptor:**
+```
+GET /api/v1/inventory
+(no auth header → 401 error)
 ```
 
-Why? The Manager dashboard subscribes to `alerts$`. When `loadLowStockAlerts()` is called, it updates the BehaviorSubject, and the template re-renders automatically. Multiple components can subscribe without each triggering their own HTTP call.
+**After interceptor:**
+```
+GET /api/v1/inventory
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+(automatically added to EVERY request)
+```
 
 ---
 
-## 21. Shell Component — The Layout Wrapper
+## 9. TrendService — The Admin Dashboard Service
 
-`ShellComponent` is the parent of all authenticated pages.
+`TrendService` manages all data for the Admin dashboard. It uses BehaviorSubjects as reactive state stores.
+
+```typescript
+// State stored in the service (not in the component):
+private readonly _signals$   = new BehaviorSubject<DashboardRow[]>([]);
+private readonly _isLoading$ = new BehaviorSubject<boolean>(false);
+
+// Components subscribe to these:
+readonly signals$   = this._signals$.asObservable();
+readonly isLoading$ = this._isLoading$.asObservable();
+```
+
+**Why store state in the service instead of the component?**  
+If multiple components need the same data, they all subscribe to the service's observables. Only ONE HTTP call is made. When the data updates, all components update simultaneously.
+
+### `loadSignals()` — Fetching Trend Data
+
+```typescript
+loadSignals(): void {
+  this._isLoading$.next(true);  // show spinner
+
+  this.http.get<ApiResponse<TrendSignal[]>>(`${baseUrl}/trends/signals`)
+    .pipe(
+      map(res => this.transformToDashboardRows(res.data)), // transform raw API data
+      tap(rows => this._signals$.next(rows)),              // push to BehaviorSubject
+      finalize(() => this._isLoading$.next(false))         // hide spinner always
+    )
+    .subscribe();
+}
+```
+
+### `analyzeKeyword()` — Triggering AI Analysis
+
+```typescript
+analyzeKeyword(keyword: string): Observable<AnalyzeReport> {
+  this._isLoading$.next(true);
+
+  return this.http.post<ApiResponse<AnalyzeReport>>(`${baseUrl}/trends/analyze`, { keyword })
+    .pipe(
+      map(res => res.data),
+      tap(() => this.loadSignals()), // auto-refresh table after analysis
+      finalize(() => this._isLoading$.next(false))
+    );
+}
+```
+
+### Data Transformation
+
+The backend returns raw `TrendSignal[]` objects. The service transforms these into `DashboardRow[]` (what the template actually displays):
+
+```typescript
+// Raw API signal:
+{ signalScore: 0.88, product: { sku: 'ELEC-001' }, rawPayload: { totalOnHand: 30 } }
+
+// Transformed DashboardRow:
+{
+  sku: 'ELEC-001',
+  trendScore: 88,          // 0.88 × 100 = 88%
+  currentStock: 30,
+  predictedDemand: 83,     // 30 × (1 + 0.88 × 1.8)
+  isAlert: true            // trendScore > 70 AND stock < 50
+}
+```
+
+---
+
+## 10. Admin Dashboard Component
+
+**File:** `features/dashboard/dashboard.component.ts`
+
+**What the Admin sees:**
+1. Stats row: Total Signals, Alerts, Adequate Stock, Avg Trend Score
+2. AI Trend Analysis panel: keyword input + "Analyze with AI" button
+3. Live Trend Signals table with filter pills and text search
+4. Bar chart: Top 5 products — Current Stock vs Predicted Demand
+
+### Angular Material Table with Filtering
+
+```typescript
+dataSource = new MatTableDataSource<DashboardRow>([]);
+
+// Custom filter combines text search + signal type pill:
+this.dataSource.filterPredicate = (row, filter) => {
+  const [textFilter, typeFilter] = filter.split('|');
+  
+  const textMatch = !textFilter ||
+    [row.sku, row.productName, row.category, row.reason]
+      .join(' ').toLowerCase().includes(textFilter);
+  
+  const typeMatch = !typeFilter || row.signalType === typeFilter;
+  
+  return textMatch && typeMatch;
+};
+
+// Applying the combined filter:
+applyFilter(): void {
+  const text = this.filterControl.value.trim().toLowerCase();
+  this.dataSource.filter = `${text}|${this.activeTypeFilter}`;
+}
+```
+
+### Chart.js Bar Chart
+
+```typescript
+// Initialized ONCE in ngAfterViewInit (after canvas exists in DOM):
+ngAfterViewInit(): void {
+  this.initChart(); // creates empty Chart instance on the canvas
+}
+
+// Updated EVERY TIME new data arrives:
+private updateChart(rows: DashboardRow[]): void {
+  const top5 = this.trendService.getTopNByTrendScore(rows, 5);
+  
+  this.barChart.data.labels = top5.map(r => r.productName);
+  this.barChart.data.datasets[0].data = top5.map(r => r.currentStock);
+  this.barChart.data.datasets[1].data = top5.map(r => r.predictedDemand);
+  this.barChart.update(); // re-renders with animation
+}
+```
+
+---
+
+## 11. Analyst Dashboard
+
+**Who sees it:** VIEWER (Analyst) role  
+**What it shows:** Demand forecasts with charts
+
+### Data Loading with `forkJoin`
+
+The dashboard needs forecasts for ALL products simultaneously:
+
+```typescript
+// forkJoin = fire all HTTP calls in parallel, wait for ALL to complete
+this.forecastService.getProducts().pipe(
+  switchMap(products =>
+    forkJoin(
+      products.map(p =>
+        this.forecastService.getForecast(p.id).pipe(
+          catchError(() => of(null)) // if one forecast fails, don't kill all others
+        )
+      )
+    )
+  )
+).subscribe(forecasts => {
+  this.forecastRows = this.buildRows(products, forecasts);
+});
+```
+
+**Why not sequential calls?**  
+If there are 20 products and each call takes 200ms, sequential would take 4 seconds. `forkJoin` runs all 20 in parallel — takes only ~200ms.
+
+### Charts
+
+- **Bar chart:** Top 8 products — current stock vs 30-day predicted demand
+- **Doughnut chart:** Demand broken down by product category
+
+Charts are built in `ngAfterViewInit` with a 150ms delay:
+```typescript
+ngAfterViewInit(): void {
+  setTimeout(() => {
+    this.buildBarChart();
+    this.buildDoughnutChart();
+    this.chartsBuilt = true;
+    // Data may have arrived before charts were ready:
+    if (this.forecastRows.length) {
+      this.updateBarChart();
+      this.updateDoughnutChart();
+    }
+  }, 150); // ensures canvas is painted before Chart.js tries to use it
+}
+```
+
+---
+
+## 12. Manager Dashboard
+
+**Who sees it:** MANAGER, ADMIN  
+**What it does:** View low-stock alerts + manage purchase orders
+
+### Stock Alert Classification
+```
+CRITICAL → item is below safety stock level (danger zone)
+LOW      → item is below reorder point (time to order soon)
+OK       → stock is adequate
+```
+
+### Purchase Order Form
+Manager clicks "New PO" → modal form appears:
+1. Select vendor from dropdown
+2. Add line items (product + quantity + unit cost)
+3. System calculates total automatically
+4. On submit → `POST /api/v1/purchase-orders`
+
+Manager can then **Approve** or **Cancel** pending POs. Each action shows a confirm modal before executing.
+
+---
+
+## 13. Warehouse Dashboard
+
+**Who sees it:** WAREHOUSE, MANAGER, ADMIN  
+**What it does:** Bin-level inventory + inbound PO management
+
+### Bin Inventory
+Each row shows:
+- Warehouse location (e.g., "Zone A, Bin 12")
+- Current stock with a visual capacity bar
+- Action badge: RESTOCK / PICK / IDLE based on stock vs reorder point
+
+### PO Status Updates
+Warehouse can:
+- Mark `APPROVED → DISPATCHED` (goods left the vendor)
+- Mark `DISPATCHED → RECEIVED` (goods arrived in warehouse)
+
+Both show a confirm modal with a visual status flow preview.
+
+---
+
+## 14. Shell and Sidebar Components
+
+### ShellComponent
+
+The layout wrapper for ALL authenticated pages:
 
 ```html
 <div class="app-shell">
-  <app-sidebar [collapsed]="sidebarCollapsed" (toggleCollapse)="toggleSidebar()">
+  <app-sidebar 
+    [collapsed]="sidebarCollapsed" 
+    (toggleCollapse)="toggleSidebar()">
   </app-sidebar>
 
   <main class="app-shell__content">
-    <router-outlet></router-outlet>  ← dashboard loads here
+    <router-outlet></router-outlet>  <!-- dashboard loads here -->
   </main>
 
-  <nav class="mobile-nav">          ← visible only on mobile (≤600px)
-    <a *ngFor="let item of mobileNavItems" ...>
+  <nav class="mobile-nav">  <!-- visible only on phones -->
+    <a *ngFor="let item of mobileNavItems" [routerLink]="item.path">
+      <mat-icon>{{ item.icon }}</mat-icon>
+      {{ item.label }}
+    </a>
   </nav>
 </div>
 ```
 
-`mobileNavItems` is filtered by role — same as the sidebar. So an ANALYST only sees the Analyst tab in the mobile nav.
+### SidebarComponent
+
+- Receives `[collapsed]` input → shows icon-only when collapsed, full text when expanded
+- Emits `(toggleCollapse)` event when collapse button clicked
+- Filters navigation items by role — a WAREHOUSE user only sees the Warehouse link
+- Shows current user's name, email, and role badge
+
+**Role filtering:**
+```typescript
+// ALL_NAV_ITEMS contains every possible nav link
+// ROLE_ACCESS[role] = array of allowed paths for that role
+this.navItems = ALL_NAV_ITEMS.filter(item =>
+  ROLE_ACCESS[this.currentUser.role].includes(item.path)
+);
+```
 
 ---
 
-## 22. Sidebar Component
+## 15. Shared Styles (dashboard-shared.scss)
 
-- Receives `[collapsed]` input from Shell.
-- Emits `(toggleCollapse)` event when the collapse button is clicked.
-- Filters `ALL_NAV_ITEMS` using `ROLE_ACCESS` — user sees only accessible dashboards.
-- Shows user name, email, and a colored role badge.
-- Responsive: full text when expanded, icon-only when collapsed.
+All 4 dashboards import this ONE file. It defines the design system:
 
----
-
-## 23. Admin Dashboard (DashboardComponent)
-
-**What it does:** Central command for ADMIN role.
-
-**Data flow:**
-1. On load → `TrendService.getSignals()` → populates the live signals table.
-2. User types a keyword and clicks "Analyze with AI".
-3. → `TrendService.runAnalysis(keyword)` → `POST /api/v1/trends/analyze`.
-4. On response → refreshes signals table + shows summary chips.
-5. Bar chart shows Top 5 products: current stock vs predicted demand.
-
-**Key features:**
-- Signal type filter pills (ALL, DEMAND_SPIKE, SEASONAL, etc.)
-- Text search on product name/SKU
-- Export visible rows to CSV
-- Chart built with Chart.js
-
-**Loading state:** Uses `isLoading$` Observable (BehaviorSubject in TrendService).
-
----
-
-## 24. Analyst Dashboard (AnalystDashboardComponent)
-
-**What it does:** Read-only demand forecasting view for ANALYST role.
-
-**Data flow:**
-1. On load → `ForecastService.getProducts()` → gets all products.
-2. For each product → `ForecastService.getForecast(productId)` — runs in parallel using `forkJoin`.
-3. Maps results to `ForecastRow[]` — combining product + forecast data.
-4. Populates two Chart.js charts:
-   - **Bar chart:** Top 8 products — current stock vs predicted demand (30d).
-   - **Doughnut chart:** Demand split by product category.
-
-**Chart timing fix:** Charts are built in `ngAfterViewInit` (after DOM is ready). Data may arrive before or after. The component handles both cases using a `chartsBuilt` flag and a 150ms delay.
-
-**Filter pills:** Filter forecast table by alert level (CRITICAL / MODERATE / LOW).
-
-**CSV Export:** Exports the currently filtered rows — not all rows.
-
----
-
-## 25. Manager Dashboard (ManagerDashboardComponent)
-
-**What it does:** Inventory control and purchase order management.
-
-**Stock Alerts Table:**
-- Shows all items below reorder point.
-- Status badge per item: CRITICAL (below safety stock) / LOW (below reorder) / OK.
-
-**Purchase Order workflow:**
-- Manager clicks "New PO" → modal form appears.
-- Selects vendor, adds line items (product + qty + unit cost).
-- On submit → `POST /api/v1/purchase-orders`.
-- Table shows all POs. Manager can:
-  - **Approve** PENDING → APPROVED (with confirm modal).
-  - **Cancel** PENDING or APPROVED → CANCELLED.
-
-**Optimistic update:** When status changes, `updatingPOId` is set to show a spinner on that row.
-
----
-
-## 26. Warehouse Dashboard (WarehouseDashboardComponent)
-
-**What it does:** Bin-level inventory view and inbound PO management.
-
-**Bin Inventory Table:**
-- Shows all inventory records with warehouse location and zone.
-- Capacity bar (filled % = currentStock / reorderQuantity × 3).
-- Action badge: RESTOCK (below reorder) / PICK (over 2× reorder) / IDLE.
-
-**Inbound POs:**
-- Filters purchase orders to only APPROVED and DISPATCHED.
-- Warehouse can:
-  - Mark APPROVED → DISPATCHED (goods left vendor).
-  - Mark DISPATCHED → RECEIVED (goods arrived in warehouse).
-- Both actions show a confirm modal with a status flow preview.
-
----
-
-## 27. Shared Styles (dashboard-shared.scss)
-
-All 4 dashboards import this one file. It defines:
-
-| Class | Purpose |
+| CSS Class | What It Does |
 |---|---|
-| `.page` | Full-height flex column page wrapper |
-| `.page-topbar` | Sticky top bar with gradient title text |
-| `.role-badge` | Colored pill (gold/blue/purple/green) |
-| `.stats-row` | 4-column responsive grid for stat cards |
-| `.stat-card` | Card with icon + label + value (5 color variants) |
-| `.panel` | Glass-effect content card |
-| `.panel__header` | Panel title row |
-| `.table-wrapper` | Scrollable table container |
-| `.data-table` | Full-width Material table |
-| `.sku-code` | Monospace blue pill for SKU codes |
+| `.page` | Full-height flex column wrapper for a dashboard page |
+| `.page-topbar` | Sticky top bar with gradient brand text |
+| `.role-badge` | Colored pill label showing the user's role (gold=ADMIN, blue=MANAGER, etc.) |
+| `.stats-row` | 4-column responsive grid for the stat cards |
+| `.stat-card` | Card with icon + label + number (5 color variants: blue/gold/green/purple/red) |
+| `.panel` | Glass-effect content card with dark background |
+| `.panel__header` | Title row inside a panel |
+| `.table-wrapper` | Scrollable container for the data table |
+| `.data-table` | Full-width Angular Material table |
+| `.sku-code` | Monospace blue pill for SKU codes (e.g., `ELEC-001`) |
 | `.category-chip` | Purple pill for category labels |
-| `.badge` | Status badge (red/gold/blue/green/muted) |
-| `.count-badge` | Gray "X / Y items" label |
-| `.loading-state` | Centered spinner for full-page loading |
-| `.api-error-banner` | Red error strip at top of page |
-| `.empty-state` | Centered icon + message when no data |
-| `.fw-bold`, `.text-blue` etc. | Utility classes |
+| `.badge` | Status badge: alert=red, ok=green, pending=gold, etc. |
+| `.loading-state` | Centered spinner for page-level loading |
+| `.empty-state` | Centered icon + message when table has no data |
+| `.api-error-banner` | Red stripe at top showing API errors |
 
 ---
 
-## 28. Shared Components & Pipes
+## 16. Shared Pipes
 
-### `LoadingRowComponent`
-**Where:** `shared/components/loading-row/`
-**What:** A spinner + text row inside a panel. Replaces the copy-pasted `<mat-spinner><span>` pattern.
-**Usage:** `<app-loading-row message="Loading orders…"></app-loading-row>`
-
-### `StatusIconPipe`
-**Where:** `shared/pipes/status.pipes.ts`
-**What:** Converts a status string to its Material icon name.
-**Usage:** `{{ row.status | statusIcon }}` → `'thumb_up'` for `'APPROVED'`
+**Pipes** transform values inside Angular templates without changing the component code.
 
 ### `StatusClassPipe`
-**Where:** `shared/pipes/status.pipes.ts`
-**What:** Converts a status string to its CSS badge class.
-**Usage:** `[ngClass]="row.status | statusClass"` → `'badge--blue'` for `'APPROVED'`
+Converts a status string to a CSS class:
+```
+'APPROVED'   → 'badge--blue'
+'PENDING'    → 'badge--gold'
+'CANCELLED'  → 'badge--red'
+'RECEIVED'   → 'badge--green'
+```
 
-**Why pipes instead of component methods?** Pipes are pure functions — Angular can cache their results and only recompute when the input changes. Component methods are called on every change detection cycle.
+Usage in template:
+```html
+<span [ngClass]="row.status | statusClass">{{ row.status }}</span>
+```
+
+### `StatusIconPipe`
+Converts a status string to a Material icon name:
+```
+'APPROVED'   → 'thumb_up'
+'PENDING'    → 'schedule'
+'CANCELLED'  → 'cancel'
+'RECEIVED'   → 'inventory'
+```
+
+**Why pipes instead of component methods?**  
+Pipes are **pure functions** — Angular caches their results. A component method is called on EVERY change detection cycle (can be hundreds of times per second). A pipe only recalculates when its input changes.
 
 ---
 
-## 29. Memory Leak Prevention
+## 17. Memory Leak Prevention
 
-Every component that subscribes to an Observable uses this pattern:
+A **memory leak** happens when code keeps running after the component it belongs to has been destroyed.
+
+**Problem:** When a component subscribes to an Observable and the user navigates away, the component is destroyed — but the subscription keeps firing, trying to update a destroyed component.
+
+**Solution — `takeUntil` + `destroy$` pattern:**
 
 ```typescript
-private destroy$ = new Subject<void>();
+export class DashboardComponent implements OnInit, OnDestroy {
+  private readonly destroy$ = new Subject<void>();
+
+  ngOnInit(): void {
+    this.trendService.signals$
+      .pipe(takeUntil(this.destroy$))  // auto-unsubscribe when destroy$ emits
+      .subscribe(rows => {
+        this.dataSource.data = rows;  // safe — component still alive
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();     // signal all subscriptions to stop
+    this.destroy$.complete(); // clean up the Subject itself
+    this.barChart?.destroy(); // also destroy Chart.js instance
+  }
+}
+```
+
+Every component in this project follows this pattern. Without it, navigating between dashboards would cause ghost updates and memory leaks.
+
+---
+
+## 18. Angular Lifecycle Hooks
+
+Angular components have lifecycle events you can hook into:
+
+| Hook | When It Runs | Used For |
+|---|---|---|
+| `ngOnInit()` | After component is created | Start HTTP calls, set up subscriptions |
+| `ngAfterViewInit()` | After HTML is rendered | Access DOM elements (like canvas for Chart.js) |
+| `ngOnDestroy()` | Before component is removed | Cancel subscriptions, destroy charts |
+
+**Example — Why Chart.js needs `ngAfterViewInit`:**
+```typescript
+@ViewChild('barChartCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
 
 ngOnInit(): void {
-  this.someService.data$
-    .pipe(takeUntil(this.destroy$))   // ← auto-unsubscribe
-    .subscribe(data => ...);
+  // ❌ WRONG: canvasRef is undefined here — HTML not rendered yet
+  const ctx = this.canvasRef.nativeElement.getContext('2d'); // null!
 }
 
-ngOnDestroy(): void {
-  this.destroy$.next();
-  this.destroy$.complete();
-}
-```
-
-Without `takeUntil`, subscriptions keep running even after the component is destroyed — causing memory leaks and ghost updates.
-
----
-
-## 30. Angular Unit Testing (Karma + Jasmine)
-
-Angular unit tests live alongside the source files as `.spec.ts` files.
-All external dependencies (Router, HttpClient, AuthService) are replaced with Jasmine spy objects — no live server needed.
-
-### Test Files
-
-| Spec File | What It Tests | Key Assertions |
-|---|---|---|
-| `auth.guard.spec.ts` | `AuthGuard.canActivate()` | Logged-in → true; unauthenticated → false + navigate `/login` |
-| `role.guard.spec.ts` | `RoleGuard.canActivate()` | Correct role → true; wrong role → false + redirect to homeRoute |
-| `auth.service.spec.ts` | `AuthService` full | ROLE_ACCESS map, ROLE_HOME map, `canAccess()`, `isLoggedIn`, `login()`, `logout()`, `user$` observable |
-
-### Key Patterns
-
-```typescript
-// All external dependencies are spy objects — no real HTTP or routing
-const authSpy = jasmine.createSpyObj('AuthService', ['canAccess'], { isLoggedIn: false });
-const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
-
-// Spy on getter to control isLoggedIn value per test
-(Object.getOwnPropertyDescriptor(authService, 'isLoggedIn')!.get as jasmine.Spy)
-  .and.returnValue(true);
-
-// HttpClientTestingModule intercepts HTTP calls for auth.service tests
-const req = httpMock.expectOne(r => r.url.includes('/auth/login'));
-req.flush({ data: { token: 'jwt-token', user: mockUser } });
-```
-
-### Run in CI
-```bash
-npm run test:ci   # Headless Chrome, code coverage enabled
-```
-
----
-
-## 31. Chart.js Integration (Analyst Dashboard)
-
-```typescript
-// Charts are initialized ONCE in ngAfterViewInit
 ngAfterViewInit(): void {
-  setTimeout(() => {
-    this.buildLineChart();   // creates empty Chart instance
-    this.buildPieChart();
-    this.chartsBuilt = true;
-    if (this.forecastRows.length) {  // data may have arrived first
-      this.updateLineChart();
-      this.updatePieChart();
-    }
-  }, 150);  // 150ms delay ensures canvas is fully painted
-}
-
-// Data arrives → updateChart() pushes new data to existing instance
-updateLineChart(): void {
-  this.lineChart.data.labels = [...];
-  this.lineChart.data.datasets[0].data = [...];
-  this.lineChart.update();   // re-renders smoothly with animation
-}
-
-// IMPORTANT: Destroy charts on component destroy to prevent memory leaks
-ngOnDestroy(): void {
-  this.lineChart?.destroy();
-  this.pieChart?.destroy();
+  // ✅ CORRECT: HTML is rendered, canvas element exists
+  const ctx = this.canvasRef.nativeElement.getContext('2d');
+  this.barChart = new Chart(ctx, config);
 }
 ```
 
 ---
 
-## 31. Common Interview Questions & Answers
+## 19. RxJS Operators Used in This App
 
-**Q: What is Optimistic Concurrency Control and why do you use it?**
-A: OCC prevents data corruption when multiple users update the same record simultaneously. Each record has a `version` number. When you update, you must send the version you last read. The SQL WHERE clause checks `AND version = :version`. If another user already updated (version changed), affected rows = 0 → HTTP 409 Conflict. The client must re-fetch and retry. We use this instead of pessimistic locking (SELECT FOR UPDATE) because it's faster — no rows are locked, so reads are never blocked.
-
-**Q: Why Angular guards and not just hiding nav items?**
-A: Hiding a nav item doesn't prevent direct URL navigation. Guards intercept at the router level — if a WAREHOUSE user types `/dashboard` in the URL, RoleGuard redirects them to `/warehouse` before the component even loads.
-
-**Q: What does BehaviorSubject do vs regular Subject?**
-A: A regular Subject only emits to subscribers who were listening BEFORE the emit. A BehaviorSubject always emits the current value to any new subscriber immediately. This is why `AuthService` uses it — if a component subscribes after login, it still gets the current user.
-
-**Q: Why use raw SQL for stock updates instead of Sequelize ORM?**
-A: The ORM's read-modify-write pattern (fetch → change in JS → save) is a multi-step operation. Between the read and the save, another update can happen — data corruption. Raw SQL `SET quantity = quantity + delta` is a single atomic operation evaluated by MySQL itself, guaranteed safe.
-
-**Q: What happens when GEMINI_API_KEY is missing?**
-A: The server boots normally — the key is validated lazily (only when `analyzeKeyword()` is called). Missing key throws a 503 AppError with a clear message. All other dashboards and features work fine without it.
-
-**Q: How does the JWT interceptor work?**
-A: Angular's `HttpInterceptor` interface intercepts every `HttpClient` request. The `AuthInterceptor` clones each request and adds the `Authorization: Bearer <token>` header from localStorage before it's sent. It also globally catches 401 responses to force logout.
-
-**Q: What is the signal pipeline?**
-A: After Gemini AI returns trending products, we cross-reference each predicted SKU against our database. Products that are BOTH trending AND below stock threshold get a `trend_signal` row written (upserted — no duplicates per day). The forecast engine reads these signals and weights them by `signal_score × weight` to predict demand.
-
-**Q: Why does the Analyst dashboard use forkJoin?**
-A: The dashboard needs forecasts for ALL products. It can't make sequential API calls (too slow). `forkJoin` fires all forecast calls in parallel and waits for ALL to complete before rendering. If any individual forecast fails, `catchError(() => of(null))` prevents one failure from killing all the others.
+| Operator | What It Does | Where We Use It |
+|---|---|---|
+| `map` | Transforms each emitted value | `map(res => res.data)` — unwrap API envelope |
+| `tap` | Side effect without changing the value | `tap(() => this.loadSignals())` — refresh after analyze |
+| `catchError` | Handles errors in the stream | Show snackbar error, don't crash the stream |
+| `finalize` | Runs when observable completes OR errors | `finalize(() => isLoading$.next(false))` — always hide spinner |
+| `takeUntil` | Stop subscribing when another observable emits | Memory leak prevention |
+| `debounceTime` | Wait N ms after last event before emitting | Search box: don't filter on every keystroke |
+| `distinctUntilChanged` | Skip if value didn't change | Don't re-filter if user types then deletes same character |
+| `switchMap` | Cancel previous inner observable when new one starts | Used in forecast loading |
+| `forkJoin` | Wait for ALL observables to complete | Load all product forecasts in parallel |
+| `combineLatest` | Emit when ANY source emits, with all latest values | Combine multiple filters |
 
 ---
 
-## 32. How to Run the Project
+## 20. How to Run the Frontend
 
 ```bash
-# Step 1: Database
-mysql -u root -p < database/schema.sql
-mysql -u root -p < database/seed.sql
-
-# Step 2: Backend (Terminal 1)
-cd backend
-cp .env.example .env      # Set DB_PASSWORD at minimum
-npm install
-npm run dev               # Runs on http://localhost:3000
-
-# Step 3: Frontend (Terminal 2)
+# 1. Enter the frontend folder
 cd frontend
-npm install
-ng serve                  # Runs on http://localhost:4200
 
-# Step 4: Generate test JWT token (optional, for API testing)
-cd backend
-node src/scripts/generate-token.js ADMIN
+# 2. Install dependencies
+npm install
+
+# 3. Start development server
+ng serve --proxy-config proxy.conf.json
+# Runs on http://localhost:4200
+# The proxy config forwards /api calls to http://localhost:3000
+```
+
+The app will open at `http://localhost:4200`. Log in with any seeded user account.
+
+**Default credentials (from database seed):**
+```
+Admin:    admin@aipulse.com    / Admin@123!
+Manager:  manager@aipulse.com  / Manager@123!
+Analyst:  analyst@aipulse.com  / Analyst@123!
+Warehouse: warehouse@aipulse.com / Warehouse@123!
 ```
 
 ---
 
-## 33. File-by-File Quick Reference
+## 21. What `proxy.conf.json` Does
 
-| File | Layer | What It Does |
-|---|---|---|
-| `backend/src/server.js` | Entry | Starts HTTP server |
-| `backend/src/app.js` | Bootstrap | Registers all middleware + routes |
-| `backend/src/config/db.config.js` | Config | Sequelize connection pool |
-| `backend/src/config/jwt.config.js` | Config | JWT secret + expiry |
-| `backend/src/utils/auth.helpers.js` | Util | `signUserToken()`, `publicUser()` |
-| `backend/src/utils/logger.js` | Util | Winston structured logger |
-| `backend/src/middlewares/auth.middleware.js` | Middleware | JWT verify + role check |
-| `backend/src/middlewares/errorHandler.middleware.js` | Middleware | Central error → HTTP response |
-| `backend/src/middlewares/rateLimiter.middleware.js` | Middleware | DDoS / brute-force protection |
-| `backend/src/middlewares/validate.middleware.js` | Middleware | Joi schema validation |
-| `backend/src/routes/index.js` | Router | Mounts all sub-routers at `/api/v1` |
-| `backend/src/controllers/auth.controller.js` | Controller | Register, Login, Me |
-| `backend/src/controllers/inventory.controller.js` | Controller | List, Get, AdjustStock (OCC) |
-| `backend/src/services/inventory.service.js` | Service | Business rules for stock updates |
-| `backend/src/services/TrendAnalysisService.js` | Service | Gemini AI orchestration |
-| `backend/src/repositories/inventory.repository.js` | Repository | Raw SQL for atomic stock updates |
-| `frontend/src/app/app-routing.module.ts` | Routing | URL → component + guards |
-| `frontend/src/app/app.module.ts` | Module | Declares all components + providers |
-| `frontend/src/app/core/services/auth.service.ts` | Service | Login/logout + RBAC + state |
-| `frontend/src/app/core/services/inventory.service.ts` | Service | HTTP calls for inventory + POs |
-| `frontend/src/app/core/guards/auth.guard.ts` | Guard | Blocks unauthenticated users |
-| `frontend/src/app/core/guards/auth.guard.spec.ts` | Test | AuthGuard unit tests |
-| `frontend/src/app/core/guards/role.guard.ts` | Guard | Blocks wrong-role users |
-| `frontend/src/app/core/guards/role.guard.spec.ts` | Test | RoleGuard unit tests |
-| `frontend/src/app/core/interceptors/auth.interceptor.ts` | Interceptor | Injects JWT + handles 401 |
-| `frontend/src/app/core/services/auth.service.ts` | Service | Login/logout + RBAC + state |
-| `frontend/src/app/core/services/auth.service.spec.ts` | Test | AuthService unit tests |
-| `frontend/src/app/shared/components/shell/` | Layout | Sidebar + router-outlet wrapper |
-| `frontend/src/app/shared/components/sidebar/` | Layout | Role-filtered navigation panel |
-| `frontend/src/app/shared/components/loading-row/` | Shared UI | Reusable spinner row |
-| `frontend/src/app/shared/pipes/status.pipes.ts` | Shared Pipe | statusClass + statusIcon |
-| `frontend/src/app/shared/styles/dashboard-shared.scss` | Styles | All shared CSS tokens |
-| `frontend/src/app/features/dashboard/` | Feature | Admin dashboard (AI + signals) |
-| `frontend/src/app/features/manager-dashboard/` | Feature | Stock alerts + PO management |
-| `frontend/src/app/features/analyst-dashboard/` | Feature | Forecast charts + CSV export |
-| `frontend/src/app/features/warehouse-dashboard/` | Feature | Bin inventory + PO dispatch |
-| `database/schema.sql` | DB | All CREATE TABLE statements |
-| `database/seed.sql` | DB | Sample data (products, vendors, inventory) |
+```json
+{
+  "/api": {
+    "target": "http://localhost:3000",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
+```
+
+Without this, the browser would block API calls because the frontend (port 4200) and backend (port 3000) are on different ports — violating the **Same-Origin Policy**.
+
+The Angular dev server proxies all `/api/*` requests to the backend. In production, a real web server (Nginx) or cloud load balancer does the same thing.
 
 ---
 
-## 34. Quick Troubleshooting
+## 22. TypeScript Interfaces (Models)
 
-### Backend won't start
+File: `shared/models/trend.model.ts`
 
-| Error | Cause | Fix |
-|---|---|---|
-| `DB_PASSWORD is not set` | `backend/.env` missing or empty | Create `.env` from `.env.example`, fill in password |
-| `Access denied for user 'root'` | Wrong password in `.env` | Check `DB_PASSWORD` matches your MySQL password |
-| `Cannot find module '...'` | `npm install` not run | Run `npm install` in `backend/` |
-| `EADDRINUSE: port 3000` | Another process using port 3000 | Kill it: `netstat -ano | findstr :3000` then `taskkill /PID <pid> /F` |
-| `Gemini API key missing` | `GEMINI_API_KEY` not set | Leave blank — AI features disabled, all else works |
+TypeScript interfaces define the **shape** of data — like a contract between the frontend and backend.
 
-### Frontend won't start
+```typescript
+// What the API returns:
+export interface TrendSignal {
+  id: string;
+  signalScore: number;      // 0.0 to 1.0
+  signalType: string;
+  weight: number;
+  product?: { sku: string; name: string; category: string; };
+  rawPayload?: { totalOnHand: number; reason: string; };
+  ingestedAt: string;
+}
 
-| Error | Cause | Fix |
-|---|---|---|
-| `Cannot find module '@angular/core'` | `npm install` not run | Run `npm install` in `frontend/` |
-| `Port 4200 already in use` | Another Angular instance | Kill it or use `ng serve --port 4201` |
-| `401 Unauthorized` on all API calls | JWT token expired/missing | Log out and log back in |
-| Material icons not showing | Font not loaded | Check `index.html` has the Google Fonts link |
+// What the dashboard table displays (transformed version):
+export interface DashboardRow {
+  id: string;
+  sku: string;
+  productName: string;
+  category: string;
+  trendScore: number;        // 0 to 100 (percentage)
+  currentStock: number;
+  predictedDemand: number;
+  signalType: string;
+  reason: string;
+  isAlert: boolean;          // trendScore > 70 AND stock < 50
+}
+```
 
-### Tests fail locally
-
-| Error | Cause | Fix |
-|---|---|---|
-| `DB_PASSWORD is not set` in tests | Not set in env before `npm test` | Run: `$env:DB_PASSWORD="anything"; npm test` |
-| Coverage threshold not met | New code added without tests | Add tests or lower threshold in `package.json` |
-| `jest.mock() not intercepting` | Module has top-level side effects | Use factory mock: `jest.mock('...', () => ({...}))` |
-
-### Git / Security
-
-| Situation | Command |
-|---|---|
-| Accidentally committed `.env` | `git rm --cached backend/.env && git commit -m "remove .env"` |
-| Password in old commit | `pip install git-filter-repo` then `git filter-repo --replace-text secrets.txt --force` |
-| Push rejected after filter-repo | `git remote add origin <url>` then `git push --force origin main` |
+If the backend changes the API response shape, TypeScript immediately shows compile errors everywhere the old shape is used — instead of silent runtime failures.
 
 ---
 
-## 35. Glossary
+## 23. Troubleshooting Common Issues
 
-| Term | Meaning |
+| Problem | Cause | Fix |
+|---|---|---|
+| Login works but dashboard shows blank | Token stored but signals API returns 401 | Log out and log back in |
+| "Analyze with AI" shows error snackbar | Backend `GEMINI_API_KEY` not set or wrong model | Check `backend/.env` has a valid key; model is now `gemini-2.5-flash` |
+| Chart not rendering | Canvas element not found | Check `ngAfterViewInit` is used, not `ngOnInit` |
+| Table not filtering | `filterPredicate` set too late | Set it in `ngOnInit` before data loads (not `ngAfterViewInit`) |
+| Mobile nav missing items | Role not in `ROLE_ACCESS` map | Check `auth.service.ts` ROLE_ACCESS definition |
+| 401 on every API call | JWT token expired | Log out → log in → new token is issued |
+| `ng serve` fails | Wrong directory or dependencies not installed | Run `npm install` in `frontend/` folder |
+| Material icons show as text | Google Fonts CDN not loaded | Check `index.html` has the Material Icons font link |
+
+---
+
+## 24. Glossary
+
+| Term | Plain English |
 |---|---|
-| **OCC** | Optimistic Concurrency Control — version-based conflict detection without locking rows |
-| **TOCTOU** | Time-of-check / Time-of-use — race condition between reading and updating shared data |
-| **JWT** | JSON Web Token — self-contained auth token; backend verifies without a database call |
-| **RBAC** | Role-Based Access Control — what a user can do depends on their role |
-| **BehaviorSubject** | RxJS class that always emits the latest value to new subscribers |
-| **SPA** | Single Page Application — Angular renders entirely in the browser |
-| **Guard** | Angular class that can block a route from activating |
-| **Interceptor** | Angular class that intercepts every HTTP request/response |
-| **Pipe** | Angular class that transforms template values (pure — cached by change detection) |
-| **Repository pattern** | Design pattern: isolate all database queries in one layer |
-| **Layered architecture** | Controller → Service → Repository — each layer has one job |
-| **Soft delete** | Mark a record as inactive instead of deleting it — keeps audit history |
-| **Signal TTL** | Time-to-live — trend signals expire after N days; stale signals are ignored |
-| **affectedRows** | MySQL response: how many rows the UPDATE actually changed |
-| **forkJoin** | RxJS operator: run N observables in parallel, wait for all to complete |
+| **SPA** | Single Page Application — Angular loads once, swaps content without full page reloads |
+| **Component** | A self-contained UI block with HTML + TypeScript + CSS |
+| **Service** | A shared class with logic/data — injected wherever needed |
+| **Guard** | Blocks navigation to a route if conditions aren't met |
+| **Interceptor** | Intercepts every HTTP request/response to add headers or handle errors |
+| **Pipe** | Transforms a value in a template (pure — cached by Angular) |
+| **Observable** | A stream of values over time — can be subscribed to |
+| **BehaviorSubject** | An Observable that stores and immediately emits the latest value to new subscribers |
+| **RxJS** | Library for reactive programming with Observables |
+| **takeUntil** | RxJS operator that cancels a subscription when a signal emits |
+| **forkJoin** | RxJS operator that runs multiple observables in parallel and waits for all to complete |
+| **Router** | Angular's system for mapping URLs to components |
+| **RouterOutlet** | A placeholder in HTML where the active route's component renders |
+| **Lazy Loading** | Loading a module only when the user navigates to it (not used here, all eager) |
+| **ngOnInit** | Lifecycle hook — runs after component is created |
+| **ngAfterViewInit** | Lifecycle hook — runs after HTML is fully rendered |
+| **ngOnDestroy** | Lifecycle hook — runs before component is removed |
+| **MatTableDataSource** | Angular Material class that manages table data + filtering + sorting |
+| **FormControl** | Angular class for managing a single form input's value and validation |
+| **debounceTime** | Wait N milliseconds after last keystroke before reacting |
+| **Memory Leak** | Subscriptions that keep running after a component is destroyed |
+| **RBAC** | Role-Based Access Control — what pages/actions a user can access depends on their role |
+| **JWT** | JSON Web Token — signed string proving who you are |
+| **Proxy** | Angular dev server feature that forwards `/api` calls to the backend on port 3000 |

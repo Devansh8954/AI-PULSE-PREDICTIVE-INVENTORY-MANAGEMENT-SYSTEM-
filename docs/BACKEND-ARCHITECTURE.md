@@ -1,237 +1,389 @@
-# AI-Pulse — Complete Codebase Guide
-## PART 1: Project Overview + Backend
+# AI-Pulse — Backend Architecture Guide
+## Complete Explanation From Basics
 
 ---
 
-## 1. What Is AI-Pulse?
+## 1. What Is This Project?
 
-AI-Pulse is a **Predictive Inventory Management System**. It solves a real business problem:
-- Traditional inventory systems react *after* stock runs out.
-- AI-Pulse predicts *before* — using Google Gemini AI to analyze trend keywords and cross-reference live stock levels.
+**AI-Pulse** is a **Predictive Inventory Management System**.
 
-**Result:** Fewer stockouts, less overstock, smarter procurement.
+Think of a supermarket. Normally, they notice a product is out of stock *after* it runs out. AI-Pulse solves this by predicting demand *before* stock runs out — using Google Gemini AI to read trend keywords like "Winter sale" or "Diwali season" and figuring out which products will spike in demand.
+
+**Real-world problem it solves:**
+- A warehouse manager types "Summer sale" into the app.
+- The AI analyzes which products will be in high demand (sunscreen, coolers, etc.).
+- The system cross-checks: which of those products are already low on stock?
+- It alerts the team: "Restock sunscreen — only 30 units left but demand is predicted to spike 80%."
 
 ---
 
-## 2. Tech Stack (Why Each Was Chosen)
+## 2. What is a Backend?
 
-| Layer | Technology | Why |
+The **backend** is the server-side part of the application — the code that runs on a server (not in the user's browser). It:
+- Receives HTTP requests from the frontend (Angular app)
+- Runs business logic (calculations, validations, rules)
+- Reads/writes data in the database
+- Returns JSON responses
+
+Our backend is built with **Node.js** and **Express.js**.
+
+**Node.js** = a runtime that lets you run JavaScript on a server (outside the browser).  
+**Express.js** = a lightweight framework that makes it easy to create HTTP routes (URLs that the frontend can call).
+
+---
+
+## 3. Tech Stack — Every Tool Explained From Scratch
+
+| Tool | What it is | Why we use it |
 |---|---|---|
-| Frontend | Angular 17 + TypeScript | Reactive, component-based SPA; strong typing prevents runtime bugs |
-| Backend | Node.js 18 + Express.js | Fast, non-blocking I/O; great for REST APIs |
-| Database | MySQL 8.x | Relational — products, inventory, vendors have structured relationships |
-| ORM | Sequelize 6 | Maps JS objects to SQL tables; also allows raw SQL when needed |
-| AI | Google Gemini 1.5 Flash | Free, fast LLM for demand trend analysis |
-| Auth | JWT + bcryptjs | Stateless tokens — no server sessions needed |
-| Validation | Joi | Declarative schema validation for request bodies |
-| Logging | Winston | Structured JSON logs; different levels for dev vs prod |
-| Testing | Jest + Supertest | Unit + integration tests for backend services and routes |
-| CI/CD | GitHub Actions | Automated lint + test on every push |
+| **Node.js 18** | JavaScript runtime for servers | Fast, non-blocking — handles many requests simultaneously without waiting |
+| **Express.js 4** | Web framework for Node.js | Makes defining routes (`GET /products`) simple with minimal boilerplate |
+| **MySQL 8** | Relational database | Stores structured data: products, orders, users — all with relationships between tables |
+| **Sequelize 6** | ORM (Object-Relational Mapper) | Lets us write JavaScript objects instead of raw SQL for most operations |
+| **JWT (jsonwebtoken)** | JSON Web Token library | Creates signed auth tokens — no server-side sessions needed |
+| **bcryptjs** | Password hashing library | Converts plain passwords into one-way hashes — original can never be recovered |
+| **Joi** | Validation library | Validates request body shapes before controllers even run |
+| **Winston** | Logging library | Structured logs with levels (info, debug, error) — better than `console.log` |
+| **Helmet** | Security middleware | Automatically sets 14 HTTP security headers on every response |
+| **dotenv** | Environment variable loader | Loads `.env` file values into `process.env` at startup |
+| **Jest + Supertest** | Testing frameworks | Jest runs unit tests; Supertest makes real HTTP calls in tests |
+| **Google Generative AI** | Gemini AI SDK | Lets us call Google's Gemini AI model from Node.js |
 
 ---
 
-## 3. Overall System Architecture
+## 4. What is a REST API?
 
+**REST API** = a set of URLs (endpoints) the frontend can call to get or send data.
+
+Every request follows this pattern:
 ```
-Browser (Angular SPA)
-    │
-    │  HTTPS + JSON
-    │  Authorization: Bearer <JWT>
-    ▼
-Express.js API (port 3000)
-    │
-    ├── Helmet         → Sets security HTTP headers
-    ├── CORS           → Only allows requests from localhost:4200
-    ├── Morgan         → Logs every request in dev mode
-    ├── Rate Limiter   → Max 100 req/IP/15min in production
-    │
-    ├── /api/v1/auth           → Login, Register, Me
-    ├── /api/v1/products       → Product CRUD
-    ├── /api/v1/inventory      → Stock levels + OCC adjustment
-    ├── /api/v1/vendors        → Vendor list
-    ├── /api/v1/signals        → Raw trend signals
-    ├── /api/v1/trends         → Gemini AI analysis
-    ├── /api/v1/forecast       → 30-day demand forecasts
-    └── /api/v1/purchase-orders → PO lifecycle
-    │
-    ▼
-MySQL 8.x (Connection Pool via Sequelize)
+METHOD  URL                          Body (optional)
+------  ---------------------------  ---------------
+GET     /api/v1/products             (none — just fetching)
+POST    /api/v1/auth/login           { "email": "...", "password": "..." }
+PATCH   /api/v1/inventory/:id/adjust { "delta": -10, "version": 3 }
 ```
 
----
-
-## 4. Backend Folder Structure
-
-```
-backend/src/
-├── server.js          ← Boots the HTTP server on port 3000
-├── app.js             ← Creates Express app, registers all middleware
-├── config/
-│   ├── db.config.js   ← Sequelize connection pool setup
-│   └── jwt.config.js  ← JWT secret + expiry from .env
-├── controllers/       ← LAYER 1: HTTP parse → call service → respond
-├── services/          ← LAYER 2: Business logic only
-├── repositories/      ← LAYER 3: All SQL/Sequelize queries
-├── models/            ← Sequelize model definitions + AppError classes
-├── middlewares/       ← auth, errorHandler, rateLimiter, validate
-├── routes/            ← Express Router definitions (which URL → which controller)
-├── utils/             ← logger (Winston), auth.helpers.js
-└── scripts/           ← One-off DB seed scripts, token generator
-```
-
----
-
-## 5. The 3-Layer Backend Pattern
-
-Every feature follows **Controller → Service → Repository**.
-
-```
-HTTP Request
-  │
-  ▼ CONTROLLER  (inventory.controller.js)
-    • Reads req.params, req.body, req.query
-    • Calls the service
-    • Returns res.status(200).json(...)
-    • NEVER contains SQL or business logic
-  │
-  ▼ SERVICE  (inventory.service.js)
-    • Contains ALL business rules
-    • Decides: "is this valid? does this conflict?"
-    • Throws AppError if something is wrong
-    • NEVER knows about req/res/HTTP status codes
-  │
-  ▼ REPOSITORY  (inventory.repository.js)
-    • Contains ALL SQL / Sequelize queries
-    • Returns plain data objects
-    • NEVER contains business rules
-  │
-  ▼ MySQL Database
-```
-
-**Why this matters:** Each layer is independently testable. You can unit-test a service without HTTP. You can swap MySQL for PostgreSQL by only changing the repository layer.
-
----
-
-## 6. Key Backend Files Explained
-
-### `server.js`
-- Entry point. Calls `app.listen(PORT)`.
-- Prints startup confirmation to console.
-- Handles uncaught exceptions and unhandled promise rejections.
-
-### `app.js`
-- Creates the Express app object.
-- Registers middleware in order: Helmet → CORS → JSON parser → Morgan → Rate Limiter → Routes → 404 handler → Error handler.
-- **Order matters:** Error handler MUST be last.
-
-### `config/db.config.js`
-- Creates a Sequelize instance with connection pooling.
-- Pool settings: min 2 connections, max 10, 30s idle timeout.
-- Tests the connection on startup — crashes with a clear error if MySQL is unreachable.
-
-### `config/jwt.config.js`
-- Exports `{ secret, expiresIn }` read from `.env`.
-- `secret` = random string, never hardcoded.
-- `expiresIn` = default `'24h'`.
-
----
-
-## 7. Middleware — Every Request Passes Through These
-
-### `auth.middleware.js` — JWT Verification
-
-```
-Every protected route calls: auth(['ADMIN', 'MANAGER'])
-
-Step 1: Extract Bearer token from Authorization header
-Step 2: jwt.verify(token, secret) → decodes payload
-Step 3: Check decoded.role is in allowedRoles array
-Step 4: Attach decoded payload to req.user
-Step 5: Call next()
-
-If token missing → 401
-If token invalid/expired → 401 (caught by errorHandler)
-If role not allowed → 403
-```
-
-**Usage in routes:**
-```js
-router.patch('/:id/adjust', auth(['ADMIN', 'MANAGER']), adjustStock);
-// Only ADMIN and MANAGER can adjust stock
-```
-
-### `errorHandler.middleware.js` — Centralized Error Handler
-
-All errors funnel here via `next(err)`. It maps error types to HTTP responses:
-
-| Error Type | HTTP Status | Code |
-|---|---|---|
-| AppError (operational) | err.statusCode | err.name |
-| SequelizeValidationError | 422 | VALIDATION_ERROR |
-| SequelizeUniqueConstraintError | 409 | DUPLICATE_ENTRY |
-| SequelizeOptimisticLockError | 409 | OPTIMISTIC_LOCK_CONFLICT |
-| JsonWebTokenError | 401 | INVALID_TOKEN |
-| TokenExpiredError | 401 | TOKEN_EXPIRED |
-| SyntaxError (bad JSON) | 400 | MALFORMED_JSON |
-| Everything else | 500 | INTERNAL_SERVER_ERROR |
-
-**Key rule:** Stack traces are only included in `development` mode — never exposed in production.
-
-### `rateLimiter.middleware.js` — DDoS / Brute-Force Protection
-
-- Uses `express-rate-limit` library.
-- Window: 15 minutes. Max: 100 requests per IP.
-- In development: localhost is skipped entirely (no limit).
-- `GET /api/v1/products` is also excluded (high-traffic pagination calls).
-- On breach → `429 Too Many Requests` with `Retry-After` header.
-
-### `validate.middleware.js` — Joi Request Validation
-
-- Each route can attach a Joi schema.
-- Validates `req.body` before the controller runs.
-- Returns `422 Unprocessable Entity` if validation fails.
-- Keeps validation logic OUT of controllers.
-
----
-
-## 8. Authentication Flow (Full)
-
-```
-User submits login form
-    │
-    ▼ POST /api/v1/auth/login  { email, password }
-    │
-    ▼ auth.controller.js → login()
-      1. Find user by email (case-insensitive)
-      2. bcrypt.compare(password, user.passwordHash)
-      3. If match → signUserToken(user) → JWT signed with secret
-      4. Return: { token, user: { id, name, email, role } }
-    │
-    ▼ Frontend stores token in localStorage
-    │
-    ▼ Every subsequent API call:
-      AuthInterceptor adds: "Authorization: Bearer <token>"
-    │
-    ▼ Backend auth.middleware.js verifies token on every protected route
-```
-
-**JWT Payload contains:**
+Every response from our API follows one envelope format:
 ```json
-{ "sub": "user-uuid", "name": "Devansh", "email": "...", "role": "ADMIN", "iat": 123, "exp": 456 }
+{
+  "success": true,
+  "data": { ... }
+}
 ```
-
-**Passwords:** Hashed with bcrypt (12 salt rounds). The hash is NEVER returned in any API response.
+Or on error:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Product not found"
+  }
+}
+```
 
 ---
 
-## 9. Optimistic Concurrency Control (OCC) — The Key Feature
+## 5. Project Folder Structure — Every File Explained
 
-**The Problem:** Two warehouse workers read stock = 50 at the same time. Both ship 10 units. Without locking, stock becomes 40 instead of 30.
+```
+backend/
+├── .env                  ← Your secret config (NEVER committed to Git)
+├── .env.example          ← Template showing what variables are needed (safe to commit)
+├── package.json          ← Lists all dependencies and npm scripts
+└── src/
+    ├── server.js         ← Entry point: starts the HTTP server on port 3000
+    ├── app.js            ← Creates the Express app and registers all middleware/routes
+    │
+    ├── config/
+    │   ├── db.config.js  ← Connects to MySQL using Sequelize
+    │   └── jwt.config.js ← Reads JWT_SECRET and JWT_EXPIRES_IN from .env
+    │
+    ├── controllers/      ← Handle HTTP requests/responses — no business logic here
+    │   ├── auth.controller.js
+    │   ├── inventory.controller.js
+    │   ├── product.controller.js
+    │   ├── purchaseOrder.controller.js
+    │   ├── signal.controller.js
+    │   ├── trendAnalysis.controller.js
+    │   ├── forecast.controller.js
+    │   └── vendor.controller.js
+    │
+    ├── services/         ← All business logic lives here
+    │   ├── inventory.service.js
+    │   ├── product.service.js
+    │   ├── vendor.service.js
+    │   └── TrendAnalysisService.js  ← AI pipeline
+    │
+    ├── repositories/     ← All database queries live here
+    │   └── inventory.repository.js  ← Raw SQL for atomic stock updates
+    │
+    ├── models/           ← Sequelize model definitions (one per database table)
+    │   └── index.js      ← Loads all models and sets up associations
+    │
+    ├── middlewares/      ← Code that runs on every request before the controller
+    │   ├── auth.middleware.js         ← Verifies JWT token + checks roles
+    │   ├── errorHandler.middleware.js ← Catches ALL errors and returns proper HTTP responses
+    │   ├── rateLimiter.middleware.js  ← Blocks too many requests from one IP
+    │   └── validate.middleware.js     ← Validates request body with Joi schemas
+    │
+    ├── routes/           ← Maps URLs to controller functions
+    │   ├── index.js               ← Mounts all routers under /api/v1
+    │   ├── auth.routes.js
+    │   ├── inventory.routes.js
+    │   ├── product.routes.js
+    │   ├── purchaseOrder.routes.js
+    │   ├── signal.routes.js
+    │   ├── trendAnalysis.routes.js
+    │   ├── forecast.routes.js
+    │   └── vendor.routes.js
+    │
+    ├── schemas/          ← Joi validation schemas (shape of expected request bodies)
+    │   └── trendAnalysis.schema.js
+    │
+    ├── errors/
+    │   └── AppError.js   ← Custom error class with statusCode + message
+    │
+    └── utils/
+        ├── logger.js        ← Winston logger setup
+        └── auth.helpers.js  ← signUserToken(), publicUser() helper functions
+```
 
-**The Solution — Version Numbers:**
+---
 
-Every inventory record has a `version` integer. When you read a record, you get its version. When you update, you MUST send that version back.
+## 6. The 3-Layer Architecture Pattern
 
+This is the most important concept to understand. Every feature follows **Controller → Service → Repository**.
+
+### Why 3 layers?
+
+Imagine a restaurant:
+- **Waiter (Controller)** — takes your order, brings your food. Doesn't cook.
+- **Chef (Service)** — applies cooking rules and recipes. Doesn't talk to customers.
+- **Pantry (Repository)** — stores and retrieves ingredients. Doesn't know what dish is being made.
+
+Each layer has ONE job. This makes the code testable and maintainable.
+
+```
+HTTP Request arrives
+       │
+       ▼
+┌─────────────────────────────────────────────────────────┐
+│  CONTROLLER  (e.g., inventory.controller.js)            │
+│  • Reads: req.params, req.body, req.query               │
+│  • Calls the service                                    │
+│  • Sends: res.status(200).json({ success: true, data }) │
+│  • NEVER contains SQL or business logic                 │
+└────────────────────────┬────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│  SERVICE  (e.g., inventory.service.js)                  │
+│  • Contains ALL business rules                          │
+│  • "Is the version number correct?"                     │
+│  • "Is the new stock level valid?"                      │
+│  • Throws AppError if something is wrong                │
+│  • NEVER knows about req/res or HTTP status codes       │
+└────────────────────────┬────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│  REPOSITORY  (e.g., inventory.repository.js)            │
+│  • Contains ALL SQL / Sequelize queries                  │
+│  • Returns plain JavaScript objects                     │
+│  • NEVER contains business rules                        │
+└────────────────────────┬────────────────────────────────┘
+                         │
+                         ▼
+                    MySQL Database
+```
+
+**Example — Adjusting Stock:**
+1. `PATCH /inventory/:id/adjust` hits the **Controller**
+2. Controller calls `inventoryService.adjustStock(id, delta, version)`
+3. Service validates the delta, checks the version
+4. Service calls `inventoryRepository.updateStockWithHistory(...)` 
+5. Repository runs the atomic SQL UPDATE
+6. Result bubbles back up → Controller sends `200 OK`
+
+---
+
+## 7. How server.js and app.js Work Together
+
+### `server.js` — The Starter
+```js
+const app = require('./app');
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+```
+This is the entry point. Run `node src/server.js` and the server starts. It just calls `app.listen()`.
+
+### `app.js` — The Builder
+This file creates the Express app and registers everything in the correct order:
+
+```
+1. helmet()           → adds security headers to every response
+2. cors()             → only allows requests from localhost:4200
+3. express.json()     → parses incoming JSON bodies (req.body)
+4. morgan()           → logs every request: "GET /api/v1/products 200 45ms"
+5. rateLimiter        → blocks IPs that make too many requests
+6. Routes             → your actual API endpoints
+7. 404 handler        → catches unknown URLs
+8. errorHandler       → catches ALL errors thrown anywhere in the app
+```
+
+**Order matters!** The error handler MUST be last. If it's registered before routes, it won't catch route errors.
+
+---
+
+## 8. Middleware — What It Is and Why It Matters
+
+**Middleware** = a function that runs between receiving a request and sending a response.
+
+Think of airport security: every passenger (request) must go through metal detectors (middleware) before boarding (reaching the controller).
+
+```js
+// Middleware signature:
+(req, res, next) => {
+  // do something
+  next(); // pass to next middleware or controller
+}
+```
+
+If `next()` is not called, the request hangs forever. If `next(err)` is called with an error, Express skips to the error handler.
+
+### `auth.middleware.js` — How JWT Verification Works
+
+**What is JWT?**  
+JWT (JSON Web Token) is a signed string that proves who you are. It looks like:
+```
+eyJhbGci.eyJ1c2VySWQiOiIx.SflKxwRJSMeK
+  [header]   [payload]      [signature]
+```
+The server signs the token when you log in. On every future request, you send it back. The server verifies the signature — no database lookup needed.
+
+**Step by step:**
+```
+1. Client sends: Authorization: Bearer eyJhbGci...
+2. auth.middleware extracts the token after "Bearer "
+3. jwt.verify(token, JWT_SECRET) — checks signature + expiry
+4. If valid, decoded payload = { id, email, role, iat, exp }
+5. Role check: is decoded.role in allowedRoles array?
+6. If yes → req.user = decoded → next()
+7. If no → next(new AppError('Access denied', 403))
+```
+
+```js
+// Usage in routes:
+router.post('/analyze', auth(['ADMIN', 'MANAGER']), ctrl.analyzeTrend);
+// Only ADMIN and MANAGER can POST to /analyze
+```
+
+### `errorHandler.middleware.js` — Central Error Handling
+
+Instead of handling errors in every controller, all errors are thrown and caught here:
+
+```js
+// Controller just throws — doesn't handle the error
+throw new AppError('Product not found', 404);
+
+// errorHandler catches it, formats the response:
+res.status(404).json({
+  success: false,
+  error: { code: 'NOT_FOUND', message: 'Product not found' }
+});
+```
+
+**Error type → HTTP status mapping:**
+
+| Error Type | HTTP Status |
+|---|---|
+| AppError (our custom error) | Whatever statusCode was set (400, 403, 404, etc.) |
+| SequelizeValidationError | 422 Unprocessable Entity |
+| SequelizeUniqueConstraintError | 409 Conflict |
+| JsonWebTokenError | 401 Unauthorized |
+| TokenExpiredError | 401 Unauthorized |
+| SyntaxError (bad JSON body) | 400 Bad Request |
+| Anything else | 500 Internal Server Error |
+
+Stack traces are only included in `development` mode — never sent to users in production.
+
+---
+
+## 9. Authentication Flow — Login to API Call
+
+Here is the complete flow from a user entering their password to making a protected API call:
+
+```
+Step 1 — User submits login form
+  POST /api/v1/auth/login
+  Body: { "email": "admin@aipulse.com", "password": "Admin@123!" }
+
+Step 2 — auth.controller.js runs login()
+  • Finds user by email in the users table
+  • bcrypt.compare("Admin@123!", storedHash) → true/false
+  • If true: creates JWT token containing { id, name, email, role }
+  • Response: { token: "eyJ...", user: { id, name, email, role } }
+
+Step 3 — Frontend stores token
+  localStorage.setItem('ai_pulse_token', 'eyJ...')
+
+Step 4 — Every future API call
+  AuthInterceptor (Angular) adds header automatically:
+  Authorization: Bearer eyJ...
+
+Step 5 — Backend verifies on every protected route
+  auth.middleware.js verifies signature + checks role
+  Sets req.user = { id, email, role }
+  Controller can read req.user.role to know who is calling
+```
+
+**Why bcrypt?**  
+bcrypt is a one-way hash. You can never reverse it back to the original password. Even if the database is stolen, attackers can't recover passwords. We use 12 salt rounds — this makes brute-force attacks take years per password.
+
+---
+
+## 10. Optimistic Concurrency Control (OCC)
+
+### The Problem — Race Conditions
+
+Imagine two warehouse workers are looking at the same screen:
+- Both see: Stock = 50 units
+- Worker A ships 10 units → sends PATCH with delta = -10
+- Worker B ships 15 units → sends PATCH with delta = -15 (at the same millisecond)
+
+Without any protection, both read 50, both write back 40 and 35 respectively. The final value is 35 — but it should be 25 (50 - 10 - 15). **Data corruption.**
+
+### The Solution — Version Numbers
+
+Every inventory record has a `version` column (integer, starts at 1).
+
+**Flow:**
+```
+1. Worker A reads: { stock: 50, version: 3 }
+2. Worker B reads: { stock: 50, version: 3 }  (same data)
+
+3. Worker A sends: PATCH { delta: -10, version: 3 }
+   SQL runs:
+     UPDATE inventory
+     SET quantity_on_hand = quantity_on_hand - 10,
+         version = version + 1
+     WHERE id = :id AND version = 3
+   → affectedRows = 1 ✅ (version was 3, now becomes 4)
+
+4. Worker B sends: PATCH { delta: -15, version: 3 }
+   SQL runs:
+     UPDATE inventory
+     SET quantity_on_hand = quantity_on_hand - 15,
+         version = version + 1
+     WHERE id = :id AND version = 3
+   → affectedRows = 0 ❌ (version is now 4, not 3!)
+   → Service throws: AppError('Conflict', 409)
+   → Worker B must re-fetch and retry
+```
+
+**The atomic SQL query:**
 ```sql
 UPDATE inventory
 SET
@@ -240,286 +392,327 @@ SET
   updated_at       = NOW()
 WHERE
       id      = :id
-  AND version = :version                      ← OCC guard
-  AND (quantity_on_hand + :delta) >= 0        ← no negative stock
+  AND version = :version
+  AND (quantity_on_hand + :delta) >= 0
 ```
 
-- If `affectedRows = 1` → success. Version is now incremented.
-- If `affectedRows = 0` → someone else updated first. Client gets **HTTP 409 Conflict**.
-- Client must re-fetch (get new version) and retry.
-
-**Why raw SQL instead of Sequelize ORM?**
-The ORM would do: read → modify in JS → save. That is NOT atomic. Between read and save, another update could happen. Raw SQL performs the entire operation in one atomic MySQL statement.
-
-**Audit Trail:** Every successful adjustment also writes to `inventory_audit_log` table — inside the SAME database transaction. If the audit insert fails, it's caught silently (doesn't roll back the stock update).
+**Why raw SQL instead of Sequelize ORM?**  
+The ORM would do: `fetch → change in JS → save`. That is 2 separate operations. Between fetch and save, another update can happen. Our raw SQL is ONE atomic MySQL operation — the database evaluates everything in a single, indivisible step.
 
 ---
 
-## 10. AI Trend Analysis Pipeline
+## 11. The AI Trend Analysis Pipeline
 
-This is the most complex feature. Triggered by: `POST /api/v1/trends/analyze { keyword }`.
+This is the most complex feature. It runs when an admin types a keyword like "Winter sale" and clicks "Analyze with AI".
+
+### Step-by-step flow:
 
 ```
-Step 1 — callGeminiAI(keyword)
-  Sends a structured prompt to Google Gemini 1.5 Flash:
-  "Analyze 'Winter coming'. Return JSON array of products likely to spike."
-  Gemini returns: [{ sku, productName, category, trendScore, reason }]
-  Defensive parsing: strips markdown fences, handles malformed JSON.
-
-Step 2 — crossReferenceInventory(aiProducts)
-  Takes Gemini's SKU list.
-  Runs a single JOIN query: Products + Inventory WHERE sku IN (...)
-  Classifies each product as:
-    • LOW_STOCK   → quantityOnHand < RESTOCK_THRESHOLD (default: 50)
-    • ADEQUATE    → stock is fine
+POST /api/v1/trends/analyze
+Body: { "keyword": "Winter sale" }
+         │
+         ▼
+trendAnalysis.controller.js
+  → calls TrendAnalysisService.analyzeKeyword("Winter sale")
+         │
+         ▼
+STEP 1: callGeminiAI("Winter sale")
+  Sends this prompt to Google Gemini 2.5 Flash:
+  
+  "You are an expert retail demand forecasting AI.
+   Analyze 'Winter sale'. Return ONLY a JSON array:
+   [{ sku, productName, category, trendScore, reason }]"
+  
+  Gemini responds with (example):
+  [
+    { sku: "CLTH-JKT-002", productName: "Winter Jacket", trendScore: 0.92, reason: "..." },
+    { sku: "SPRT-SKI-001", productName: "Ski Boots", trendScore: 0.85, reason: "..." }
+  ]
+  
+  Defensive parsing: strips markdown ``` fences if model adds them
+         │
+         ▼
+STEP 2: crossReferenceInventory(aiProducts)
+  Takes Gemini's SKU list → runs ONE JOIN query:
+    SELECT products.*, inventory.*
+    FROM products
+    JOIN inventory ON products.id = inventory.product_id
+    WHERE products.sku IN ('CLTH-JKT-002', 'SPRT-SKI-001', ...)
+  
+  For each product, calculates totalOnHand (sum across all warehouse locations)
+  
+  Classifies each:
+    • LOW_STOCK      → totalOnHand < 50 (RESTOCK_THRESHOLD)
+    • ADEQUATE       → stock is fine
     • NOT_IN_CATALOG → SKU doesn't exist in our database
-
-Step 3 — persistTrendSignals(enrichedProducts, keyword)
+         │
+         ▼
+STEP 3: persistTrendSignals(enrichedProducts, keyword)
   For items that are BOTH trending AND low-stock:
-  Upserts a row into trend_signals table.
-  Keyed on (product_id, signal_source, signal_date) — no duplicate signals per day.
-  Signal has a TTL (default 7 days) — after that, forecasting ignores it.
-
-Step 4 — Returns analysis report
-  { keyword, analyzedAt, summary: { totalTrending, lowStockAlerts, signalsWritten, ... }, trendingProducts }
+  → Upsert a row into trend_signals table
+  → Keyed on (product_id, signal_source, signal_date) — no duplicate signals per day
+  → Signal expires after 7 days (TREND_SIGNAL_TTL_DAYS)
+  → signal_score = AI's trendScore, weight = 1.8 (AI signals trusted more)
+         │
+         ▼
+STEP 4: Return analysis report
+  {
+    keyword: "Winter sale",
+    analyzedAt: "2026-06-04T...",
+    summary: {
+      totalTrending: 6,
+      lowStockAlerts: 2,
+      signalsWritten: 2,
+      notInCatalog: 1
+    },
+    trendingProducts: [...]
+  }
 ```
 
-**Constants (configurable via `.env`):**
-- `TREND_RESTOCK_THRESHOLD` = 50 (default)
-- `TREND_SIGNAL_TTL_DAYS` = 7 (default)
-- `AI_SIGNAL_WEIGHT` = 1.8 (AI signals weighted higher than manual ones)
+### What is `gemini-2.5-flash`?
+It is Google's current stable AI model (as of 2026) — fast, cost-effective, and great for text generation tasks like our structured JSON prompt. We previously used `gemini-1.5-flash` but that model was **shut down by Google** in 2026. We updated to `gemini-2.5-flash` to fix this.
 
 ---
 
-## 11. Forecast Engine
+## 12. The Forecast Engine
 
 `GET /api/v1/forecast/:productId`
 
-The forecast service:
-1. Fetches all active (non-expired) trend signals for the product.
-2. Calculates a weighted average trend score: `SUM(score × weight) / SUM(weight)`.
-3. Multiplies by a demand multiplier to predict 30-day demand.
-4. Calculates depletion days: `currentStock / dailyDemand`.
-5. Returns `alertLevel`:
-   - `CRITICAL` if depletion < 7 days
-   - `MODERATE` if depletion < 20 days
-   - `LOW` otherwise
-
----
-
-## 12. Purchase Order Lifecycle
+Once trend signals are written, the forecast engine reads them:
 
 ```
-PENDING  →  APPROVED  →  DISPATCHED  →  RECEIVED
-   │              │
-   └──────────────┴──→  CANCELLED
+1. Fetch all ACTIVE (non-expired) trend signals for the product
+2. Weighted average trend score:
+   score = SUM(signalScore × weight) / SUM(weight)
+3. Predicted daily demand = baselineDemand × (1 + score)
+4. Depletion days = currentStock / predictedDailyDemand
+5. Alert level:
+   • CRITICAL → depletion < 7 days
+   • MODERATE → depletion < 20 days
+   • LOW       → everything is fine
 ```
 
-| Status | Who Can Set It | What It Means |
+---
+
+## 13. Purchase Order Lifecycle
+
+A Purchase Order (PO) tracks when goods are ordered from a vendor.
+
+```
+[Manager creates PO]
+       │
+       ▼
+   PENDING  ──────────────────────→  CANCELLED
+       │                                  ↑
+       ▼                                  │
+   APPROVED  ─────────────────────→  CANCELLED
+       │
+       ▼ (Warehouse marks goods as shipped)
+  DISPATCHED
+       │
+       ▼ (Warehouse confirms goods received)
+   RECEIVED  (terminal — cannot change further)
+```
+
+**Who can do what:**
+| Action | Role |
+|---|---|
+| Create PO | MANAGER, ADMIN |
+| Approve PO | MANAGER, ADMIN |
+| Cancel PO | MANAGER, ADMIN |
+| Mark DISPATCHED | WAREHOUSE, MANAGER, ADMIN |
+| Mark RECEIVED | WAREHOUSE, MANAGER, ADMIN |
+
+---
+
+## 14. Database Models (Tables)
+
+Each Sequelize model maps to a MySQL table:
+
+| Model | Table | What It Stores |
 |---|---|---|
-| PENDING | Manager (on creation) | PO created, awaiting approval |
-| APPROVED | Manager | Approved, sent to Warehouse |
-| DISPATCHED | Warehouse | Goods left vendor facility |
-| RECEIVED | Warehouse | Goods arrived, logged in warehouse |
-| CANCELLED | Manager | Cancelled (terminal state) |
+| `User` | `users` | Login accounts with roles |
+| `Product` | `products` | SKU, name, category, price |
+| `Inventory` | `inventory` | Stock levels per warehouse location |
+| `Vendor` | `vendors` | Supplier names and contacts |
+| `PurchaseOrder` | `purchase_orders` | PO header (vendor, status, total) |
+| `PurchaseOrderLine` | `purchase_order_lines` | Individual line items inside a PO |
+| `TrendSignal` | `trend_signals` | AI-generated demand signals |
+| `InventoryAuditLog` | `inventory_audit_log` | History of every stock adjustment |
+
+**Relationships:**
+```
+Product ──has many──→ Inventory (one product in multiple locations)
+Product ──has many──→ TrendSignal
+Vendor  ──has many──→ PurchaseOrder
+PurchaseOrder ──has many──→ PurchaseOrderLine
+PurchaseOrderLine ──belongs to──→ Product
+```
 
 ---
 
-## 13. API Routes — Complete Map
+## 15. All API Routes
 
-All prefixed with `/api/v1`. Protected routes require Bearer JWT.
+All routes are prefixed with `/api/v1`:
 
-| Method | Path | Auth | Handler |
+| Method | Path | Who Can Call | What It Does |
 |---|---|---|---|
-| POST | /auth/register | None | auth.controller → register |
-| POST | /auth/login | None | auth.controller → login |
-| GET | /auth/me | Any | auth.controller → me |
-| GET | /products | Any | product.controller → list |
-| POST | /products | ADMIN | product.controller → create |
-| GET | /products/:id | Any | product.controller → getById |
-| PUT | /products/:id | ADMIN | product.controller → update (with OCC) |
-| DELETE | /products/:id | ADMIN | product.controller → softDelete |
-| GET | /inventory | Any | inventory.controller → list |
-| GET | /inventory/:id | Any | inventory.controller → getById |
-| PATCH | /inventory/:id/adjust | ADMIN,MANAGER | inventory.controller → adjustStock |
-| GET | /vendors | Any | vendor.controller → list |
-| POST | /vendors | ADMIN | vendor.controller → create |
-| GET | /signals | Any | signal.controller → list |
-| POST | /signals/ingest | ADMIN | signal.controller → ingest |
-| POST | /trends/analyze | ADMIN,MANAGER | trendAnalysis.controller → analyze |
-| GET | /trends/signals | Any | trendAnalysis.controller → getSignals |
-| GET | /forecast/:productId | Any | forecast.controller → getForecast |
-| GET | /purchase-orders | Any | purchaseOrder.controller → list |
-| POST | /purchase-orders | MANAGER,ADMIN | purchaseOrder.controller → create |
-| PATCH | /purchase-orders/:id/status | MANAGER,ADMIN,WAREHOUSE | purchaseOrder.controller → updateStatus |
+| POST | /auth/register | Anyone | Create a new user account |
+| POST | /auth/login | Anyone | Login, get JWT token |
+| GET | /auth/me | Logged in | Get current user info |
+| GET | /products | Anyone | List all products |
+| POST | /products | ADMIN | Create a product |
+| GET | /products/:id | Anyone | Get one product |
+| PUT | /products/:id | ADMIN | Update a product |
+| DELETE | /products/:id | ADMIN | Soft-delete a product |
+| GET | /inventory | Anyone | List all inventory records |
+| GET | /inventory/:id | Anyone | Get one inventory record |
+| PATCH | /inventory/:id/adjust | ADMIN, MANAGER | Adjust stock (OCC) |
+| GET | /vendors | Anyone | List vendors |
+| POST | /vendors | ADMIN | Create vendor |
+| GET | /trends/signals | Anyone | Get trend signals for dashboard |
+| POST | /trends/analyze | ADMIN, MANAGER | Run AI analysis |
+| GET | /forecast/:productId | Anyone | Get 30-day forecast |
+| GET | /purchase-orders | Anyone | List purchase orders |
+| POST | /purchase-orders | MANAGER, ADMIN | Create a PO |
+| PATCH | /purchase-orders/:id/status | MANAGER, ADMIN, WAREHOUSE | Update PO status |
 
 ---
 
-## 14. Environment Variables
+## 16. Environment Variables — Why They Exist
 
-File: `backend/.env` (copy from `.env.example`)
+**Problem:** If you hardcode your database password in `db.config.js` and commit to GitHub, your password is exposed forever.
 
-| Variable | Required | Default | Purpose |
-|---|---|---|---|
-| `NODE_ENV` | No | development | Controls logging, rate limits |
-| `PORT` | No | 3000 | HTTP server port |
-| `DB_HOST` | No | localhost | MySQL host |
-| `DB_PORT` | No | 3306 | MySQL port |
-| `DB_NAME` | No | ai_pulse_db | Database name |
-| `DB_USER` | No | root | MySQL username |
-| `DB_PASSWORD` | **Yes** | — | MySQL password |
-| `JWT_SECRET` | No | fallback-dev | JWT signing secret |
-| `JWT_EXPIRES_IN` | No | 24h | Token expiry |
-| `GEMINI_API_KEY` | Optional | — | Google Gemini AI key |
-| `BCRYPT_SALT_ROUNDS` | No | 12 | Password hashing cost |
-| `RATE_LIMIT_MAX` | No | 100 | Requests per window |
-| `RATE_LIMIT_WINDOW_MS` | No | 900000 | Window (15 min) |
-| `TREND_RESTOCK_THRESHOLD` | No | 50 | Low-stock threshold |
-| `TREND_SIGNAL_TTL_DAYS` | No | 7 | Signal expiry in days |
-| `CORS_ORIGIN` | No | localhost:4200 | Allowed frontend origin |
+**Solution:** Store secrets in a `.env` file that is **never committed to Git**.
 
----
+The `.env` file is loaded by `dotenv` at startup, and values become available as `process.env.VARIABLE_NAME`.
 
-## 15. Security Practices
-
-### What Protects the API
-
-| Layer | Mechanism | Purpose |
+| Variable | What It Is | Example Value |
 |---|---|---|
-| Network | `helmet` middleware | Sets 14 security HTTP headers (CSP, HSTS, X-Frame-Options, etc.) |
-| Auth | JWT Bearer tokens | Stateless — no server-side sessions |
-| Passwords | `bcrypt` (12 rounds) | Hashes are one-way; original password is never stored |
-| Rate Limiting | `express-rate-limit` | 100 req/IP/15min in production; localhost exempt in dev |
-| Roles | `auth.middleware.js` | 3-step: verify signature → check expiry → check role |
-| Input | `validate.middleware.js` | Joi schemas reject malformed request bodies before controllers run |
-| Errors | `errorHandler.middleware.js` | Stack traces never exposed in production (`NODE_ENV=production`) |
+| `PORT` | Which port the server listens on | `3000` |
+| `NODE_ENV` | Running mode (affects logging, security) | `development` |
+| `DB_HOST` | MySQL server address | `localhost` |
+| `DB_PORT` | MySQL port | `3306` |
+| `DB_NAME` | Database name | `ai_pulse_db` |
+| `DB_USER` | MySQL username | `root` |
+| `DB_PASSWORD` | MySQL password — **NEVER hardcode this** | `yourpassword` |
+| `JWT_SECRET` | Secret key used to sign/verify tokens | 64-char random hex string |
+| `JWT_EXPIRES_IN` | How long a token stays valid | `90d` |
+| `GEMINI_API_KEY` | Your Google AI Studio API key | `AIzaSy...` |
+| `CORS_ORIGIN` | Which frontend URL is allowed | `http://localhost:4200` |
+| `TREND_RESTOCK_THRESHOLD` | Stock level considered "low" | `50` |
+| `TREND_SIGNAL_TTL_DAYS` | How many days a signal stays active | `7` |
 
-### JWT Secret Best Practice
+---
+
+## 17. Security — How the API is Protected
+
+| Layer | What Protects It | How |
+|---|---|---|
+| **HTTP Headers** | `helmet` middleware | Adds headers like `X-Frame-Options`, `Content-Security-Policy` to prevent XSS/clickjacking |
+| **CORS** | `cors` middleware | Only requests from `CORS_ORIGIN` (your Angular app) are accepted |
+| **Auth** | JWT Bearer tokens | Every protected route verifies the token signature before running |
+| **Passwords** | `bcrypt` (12 rounds) | Passwords are hashed — even we can't see your password |
+| **Rate Limiting** | `express-rate-limit` | Max 100 requests per IP per 15 minutes |
+| **Input Validation** | `Joi` schemas | Malformed request bodies are rejected with 422 before controllers run |
+| **Error Safety** | `errorHandler` | Stack traces never sent to users in production |
+| **Secrets** | `.env` + `.gitignore` | Passwords/API keys never committed to source control |
+
+---
+
+## 18. Bug Fixed — AI Search Not Working
+
+**Date:** June 4, 2026  
+**Symptom:** Clicking "Analyze with AI" showed an error snackbar. Backend returned HTTP 500.
+
+**Root Cause:**
+```
+[GoogleGenerativeAI Error]: 404 Not Found
+models/gemini-1.5-flash is not found for API version v1beta
+```
+Google shut down the `gemini-1.5-flash` model in 2026.
+
+**Fix — One Line Change in `TrendAnalysisService.js`:**
+```js
+// BEFORE (broken — model no longer exists):
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+// AFTER (fixed — current stable model):
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+```
+
+`gemini-2.5-flash` is Google's current recommended model — faster, smarter, and actively maintained.
+
+---
+
+## 19. How to Run the Backend
 
 ```bash
-# Generate a cryptographically strong secret (run this once):
-node -e "require('crypto').randomBytes(64).toString('hex')"
-# Paste result into backend/.env as JWT_SECRET
+# 1. Enter the backend folder
+cd backend
+
+# 2. Install all dependencies
+npm install
+
+# 3. Create your .env file (copy the template)
+copy .env.example .env
+# Then open .env and fill in: DB_PASSWORD and GEMINI_API_KEY
+
+# 4. Set up the database (first time only)
+mysql -u root -p < ../database/schema.sql
+mysql -u root -p < ../database/seed.sql
+
+# 5. Start the server
+npm run dev       # Development mode (auto-restarts on file change)
+# OR
+npm start         # Production mode
 ```
 
-Never use a short or guessable secret. The JWT is signed with HMAC-SHA256 — a weak secret can be brute-forced.
-
-### Secrets Management — What Belongs Where
-
-| File | Committed? | Contains |
-|---|---|---|
-| `backend/.env` | ❌ Never (git-ignored) | Real passwords, API keys, JWT secret |
-| `backend/.env.example` | ✅ Yes | Placeholder values only — safe template |
-| `.gitignore` (root) | ✅ Yes | Blocks `.env`, `*.key`, `*.pem`, `*.cert` |
-| `backend/.gitignore` | ✅ Yes | Belt-and-suspenders: also blocks `.env` files |
-
-> **Lesson learned:** If a real password is ever accidentally committed, use `git filter-repo --replace-text` to scrub it from ALL history, then `git push --force`. Change the password immediately.
+The server will print:
+```
+✅  MySQL connection established via Sequelize.
+🚀  AI-Pulse API running → http://localhost:3000
+```
 
 ---
 
-## 16. CI/CD Pipeline (GitHub Actions)
+## 20. Testing
 
-File: `.github/workflows/ci.yml`
+```bash
+# Run all tests
+npm test
 
-### Pipeline Structure
+# Run with coverage report
+npm run test:coverage
 
-```
-Push to main / Pull Request to main
-         │
-    ┌────┴────────────────────────────────┐
-    │                                     │
- Backend track                      Frontend track
-    │                                     │
- 1. backend-lint (ESLint)         4. frontend-lint (tsc --noEmit)
-    │                                     │
- 2. backend-test (Jest + cov)    5. frontend-test (Karma + Chrome)
-    │                                     │
- 3. backend-audit (npm audit)    6. frontend-build (ng build --prod)
-                                          │
-                                 7. frontend-audit (npm audit)
-    │                                     │
-    └──────────────────┬──────────────────┘
-                       │
-              8. all-checks-pass
-              (gate job — blocks merge if critical jobs fail)
+# Run lint (code style check)
+npm run lint
 ```
 
-### Job Details
+**Jest** is the testing framework. Tests live in `backend/tests/`.
 
-| Job | What It Does | Fails Build? |
-|---|---|---|
-| `backend-lint` | ESLint on `src/**/*.js` and `tests/**/*.js` | Yes (0 errors allowed) |
-| `backend-test` | Jest unit tests + coverage enforcement | Yes |
-| `backend-audit` | `npm audit --audit-level=high` — no high/critical CVEs | Yes |
-| `frontend-lint` | `tsc --noEmit` — TypeScript type check | Yes |
-| `frontend-test` | Karma + headless Chrome — Angular unit tests + coverage | Yes |
-| `frontend-build` | `ng build --configuration production` | Yes |
-| `frontend-audit` | `npm audit` — Angular deps, soft fail allowed | No (warnings only) |
-
-### Coverage Thresholds (Enforced in CI)
-
-Backend covers **services + auth/errorHandler middlewares** (thin wrappers like rateLimiter/validate excluded):
-
-| Metric | Threshold | Current |
-|---|---|---|
-| Statements | 70% | ~79.5% ✅ |
-| Functions | 60% | ~68.2% ✅ |
-| Branches | 55% | ~72.3% ✅ |
-| Lines | 70% | ~81.2% ✅ |
-
-### Key CI Design Decisions
-
-**Why `DB_PASSWORD=ci-test-placeholder` in CI?**
-The `db.config.js` has a fail-fast guard: if `DB_PASSWORD` is not set, it throws immediately. Unit tests mock the repository layer (no live DB needed), but `db.config.js` still runs during module loading. Setting a non-empty placeholder satisfies the guard without a real database.
-
-**Why explicit factory mock in `inventory.service.test.js`?**
-```js
-jest.mock('../../src/repositories/inventory.repository', () => ({
-  findById: jest.fn(),
-  updateStockWithHistory: jest.fn(),
-}));
-```
-Auto-mocking (`jest.mock('...')` without factory) still loads the real module to analyze its export shape. That loads `inventory.repository.js` → `db.config.js` → throws. The factory mock bypasses the real module entirely — Jest never loads it.
+Tests mock the database layer — no real MySQL connection needed to run tests. This is why CI/CD works without a database.
 
 ---
 
-## 17. Bugs Fixed During Development (Reference)
+## 21. Glossary of Terms
 
-| Bug | Root Cause | Fix |
-|---|---|---|
-| `coverageThresholds` ignored by Jest | Typo: should be `coverageThreshold` (no 's') | Fixed in `package.json` |
-| Inventory test suite crashed in CI | Auto-mock triggered `db.config.js` without `DB_PASSWORD` | Replaced with factory mock |
-| `unused-vars` ESLint warnings | `sequelize`, `Op`, `inventoryRecords` imported but not used | Removed imports; prefixed unused vars with `_` |
-| `.env` accidentally deleted | User deleted the file | Recreated from `.env.example` template |
-| `abc@123` exposed in git history | Put in `.env.example` which was committed | Used `git filter-repo --replace-text` to scrub history |
-
----
-
-## 18. Project Health Snapshot
-
-Last verified: May 2026
-
-```
-Backend:
-  ✅ npm run lint    → 0 errors, 0 warnings
-  ✅ npm run test    → 42/42 tests pass, 6/6 suites
-  ✅ Coverage        → 81.2% lines | 79.5% stmts | 72.3% branches | 68.2% funcs
-  ✅ npm audit       → 0 high/critical (2 moderate in Sequelize internals — upstream fix pending)
-
-Frontend:
-  ✅ tsc --noEmit   → 0 TypeScript errors
-  ✅ ng build --prod → clean production bundle (1.26 MB initial, 266 KB gzipped)
-  ✅ Unit tests      → auth.guard, role.guard, auth.service specs pass
-
-Security:
-  ✅ git history scrubbed (no passwords in any commit)
-  ✅ .env git-ignored at both root and backend level
-  ✅ .env.example has placeholder values only
-
-CI/CD:
-  ✅ GitHub Actions pipeline configured (8 jobs)
-  ✅ Frontend unit tests (Karma + headless Chrome) added to CI
-  ✅ Coverage reports uploaded as artifacts on every run
-  ✅ Security audit on every push
-  ✅ Gate job blocks merges if any critical job fails
-```
+| Term | Plain English Explanation |
+|---|---|
+| **REST API** | A set of URLs a frontend can call to get/send data |
+| **Middleware** | Code that runs on every request before the controller |
+| **JWT** | A signed token proving who you are — no database lookup needed |
+| **bcrypt** | A one-way password hashing function |
+| **ORM** | Tool that lets you write JS objects instead of raw SQL |
+| **OCC** | Version-based system to prevent two people updating the same data simultaneously |
+| **Race Condition** | When two operations run at the same time and corrupt each other's data |
+| **Atomic Operation** | A database operation that either fully succeeds or fully fails — never half-done |
+| **Repository Pattern** | Design rule: all database queries go in one layer (the repository) |
+| **Layered Architecture** | Controller → Service → Repository — each layer has one job |
+| **Soft Delete** | Mark a record as `isActive: false` instead of actually deleting it |
+| **Signal TTL** | Time-to-live — how long a trend signal stays valid before expiring |
+| **Upsert** | INSERT if the row doesn't exist, UPDATE if it does |
+| **BehaviorSubject** | RxJS class (Angular) that always emits the latest value to new subscribers |
+| **Environment Variable** | Config value loaded from `.env` — never hardcoded in source code |
+| **CORS** | Browser security rule: a website can only call APIs on the same origin (unless explicitly allowed) |
+| **Helmet** | npm package that sets security HTTP response headers automatically |
