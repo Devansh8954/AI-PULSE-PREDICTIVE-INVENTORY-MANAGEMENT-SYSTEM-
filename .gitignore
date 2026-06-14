@@ -22,7 +22,7 @@ yarn-error.log*
 .npm
 
 # ── Build output ──────────────────────────────────────────────────────────────
-# dist/
+dist/
 build/
 out/
 .angular/
