@@ -184,7 +184,7 @@ this.authService.user$.subscribe(user => {
 
 **Why localStorage?**  
 Survives page refresh. If you store in memory only, refreshing the page logs you out.
-
+ 
 ### Logout Flow
 
 ```
