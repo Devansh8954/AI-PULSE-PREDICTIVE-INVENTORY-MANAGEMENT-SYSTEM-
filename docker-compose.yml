@@ -1,0 +1,121 @@
+# =============================================================================
+# AI-Pulse — docker-compose.yml
+#
+# Services:
+#   db       → MySQL 8.4 (persisted volume, health-checked)
+#   backend  → Node.js Express API (waits for db to be healthy)
+#   frontend → Angular app served by Nginx (proxies /api → backend)
+#
+# Quick start:
+#   1. cp backend/.env.example backend/.env   # fill in secrets
+#   2. docker compose up --build -d
+#   3. open http://localhost:4200
+# =============================================================================
+
+services:
+
+  # ── MySQL Database ───────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.4
+    container_name: ai_pulse_db
+    restart: unless-stopped
+
+    environment:
+      # Using root throughout so DB_USER=root in .env connects without a permissions error.
+      # If you later add a dedicated MySQL user, update DB_USER in .env to match.
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE:      ${DB_NAME:-ai_pulse_db}
+
+    ports:
+      # Expose to host only in dev so you can connect with MySQL Workbench / DBeaver
+      - "3306:3306"
+
+    volumes:
+      # Persist data across container restarts
+      - db_data:/var/lib/mysql
+      # Auto-run schema + seed on first boot (alphabetical order)
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+
+    healthcheck:
+      # Use shell form so ${DB_PASSWORD} is expanded by the shell inside the container.
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+    networks:
+      - ai_pulse_net
+
+  # ── Node.js Backend API ──────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai_pulse_backend
+    restart: unless-stopped
+
+    # Pass every env var from backend/.env into the container at runtime.
+    # Secrets NEVER baked into the image.
+    env_file:
+      - ./backend/.env
+
+    environment:
+      # Override only the DB_HOST to point to the compose service name
+      DB_HOST: db
+      DB_PORT: 3306
+      NODE_ENV: ${NODE_ENV:-production}
+
+    ports:
+      # Expose backend to host for direct API testing (Postman, curl)
+      - "3000:3000"
+
+    volumes:
+      # Named volume for persistent logs (optional — remove if you use stdout only)
+      - backend_logs:/app/logs
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    healthcheck:
+      # The health endpoint is registered at /health in app.js (not /api/v1/health)
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+    networks:
+      - ai_pulse_net
+
+  # ── Angular Frontend (Nginx) ─────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ai_pulse_frontend
+    restart: unless-stopped
+
+    ports:
+      - "4200:80"
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    networks:
+      - ai_pulse_net
+
+# ── Named Volumes ─────────────────────────────────────────────────────────────
+volumes:
+  db_data:
+    driver: local
+  backend_logs:
+    driver: local
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  ai_pulse_net:
+    driver: bridge

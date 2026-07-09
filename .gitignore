@@ -56,3 +56,9 @@ coverage/
 *.key
 *.cert
 *.p12
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+# Local override file for docker-compose (put your dev overrides here)
+docker-compose.override.yml
+# Docker volumes synced locally (if you ever use bind-mounts for db_data)
+.docker/

@@ -1,0 +1,42 @@
+# =============================================================================
+# AI-Pulse Backend — .dockerignore
+# Prevents unnecessary files from being sent to the Docker build context.
+# Keep this in sync with .gitignore, but Docker-specific rules take priority.
+# =============================================================================
+
+# ── Dependencies (re-installed inside image) ──────────────────────────────────
+node_modules/
+npm-debug.log*
+
+# ── Secrets — NEVER bake into an image ───────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Test / Dev artefacts ─────────────────────────────────────────────────────
+tests/
+coverage/
+.nyc_output/
+*.test.js
+
+# ── Dev tooling ───────────────────────────────────────────────────────────────
+.eslintrc.js
+.eslintignore
+nodemon.json
+
+# ── Logs (mounted as volume at runtime) ──────────────────────────────────────
+logs/
+
+# ── VCS ───────────────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── Editor / OS ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ── Docs ─────────────────────────────────────────────────────────────────────
+README.md
