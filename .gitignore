@@ -5,6 +5,11 @@
 # The backend/ folder has its own .gitignore too (belt + suspenders).
 # =============================================================================
 
+# ── Root-level npm artefacts (there should be NO package.json at root) ────────
+/node_modules/
+/package-lock.json
+
+
 # ── SECRETS — Never commit these ─────────────────────────────────────────────
 .env
 .env.local
