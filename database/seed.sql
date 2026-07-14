@@ -237,7 +237,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- =============================================================================
 -- VERIFY SEED DATA
 -- =============================================================================
-SELECT 'vendors'        AS tbl, COUNT(*) AS rows FROM vendors
+SELECT 'vendors'        AS tbl, COUNT(*) AS row_count FROM vendors
 UNION ALL
 SELECT 'users',         COUNT(*) FROM users
 UNION ALL
