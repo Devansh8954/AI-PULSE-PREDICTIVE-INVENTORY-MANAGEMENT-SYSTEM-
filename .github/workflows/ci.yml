@@ -298,21 +298,12 @@ jobs:
         continue-on-error: true   # Angular deps frequently have low-severity advisories
 
   # ════════════════════════════════════════════════════════════════════════════
-  # JOB 8 — Docker: Build & Push to Docker Hub
-  #
-  # On pull_request  → Build only (validates the Dockerfile, no push)
-  # On push to main  → Build + push to Docker Hub with tags:
-  #                      <user>/ai-pulse-backend:latest
-  #                      <user>/ai-pulse-backend:<git-sha>
-  #                      <user>/ai-pulse-frontend:latest
-  #                      <user>/ai-pulse-frontend:<git-sha>
-  #
-  # Required GitHub Secrets (Settings → Secrets → Actions):
-  #   DOCKERHUB_USERNAME  — your Docker Hub username
-  #   DOCKERHUB_TOKEN     — Docker Hub access token (NOT your password)
+  # JOB 8 — Docker: Build Validation
+  # Validates that both Dockerfiles build successfully.
+  # No registry push — purely a build smoke test.
   # ════════════════════════════════════════════════════════════════════════════
   docker-build:
-    name: 🐳 Docker — Build & Push
+    name: 🐳 Docker — Build Validation
     runs-on: ubuntu-latest
     needs:
       - backend-test
@@ -325,64 +316,31 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Login only when pushing (i.e. on main branch, not on PRs)
-      - name: Log in to Docker Hub
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      # ── Backend image ──────────────────────────────────────────────────────
-      - name: Extract metadata for backend
-        id: meta-backend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend
-          tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=sha,prefix=sha-,format=short
-
-      - name: Build & push backend image
+      - name: Build backend image
         uses: docker/build-push-action@v6
         with:
           context: ./backend
           file: ./backend/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
-          tags: ${{ steps.meta-backend.outputs.tags }}
-          labels: ${{ steps.meta-backend.outputs.labels }}
+          push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ── Frontend image ─────────────────────────────────────────────────────
-      - name: Extract metadata for frontend
-        id: meta-frontend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-frontend
-          tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=sha,prefix=sha-,format=short
-
-      - name: Build & push frontend image
+      - name: Build frontend image
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
-          tags: ${{ steps.meta-frontend.outputs.tags }}
-          labels: ${{ steps.meta-frontend.outputs.labels }}
+          push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Docker Hub image summary
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      - name: Docker build summary
         run: |
-          echo "## 🐳 Docker Hub Images Published" >> $GITHUB_STEP_SUMMARY
-          echo "| Image | Tags |" >> $GITHUB_STEP_SUMMARY
+          echo "## 🐳 Docker Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| \`${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend\` | \`latest\`, \`sha-${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| \`${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-frontend\` | \`latest\`, \`sha-${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| ai-pulse-backend | ✅ Built successfully |" >> $GITHUB_STEP_SUMMARY
+          echo "| ai-pulse-frontend | ✅ Built successfully |" >> $GITHUB_STEP_SUMMARY
 
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 9 — All CI Checks Gate (branch protection requirement)
