@@ -28,6 +28,9 @@ FROM nginx:1.27-alpine AS runner
 # Remove the default Nginx landing page
 RUN rm -rf /usr/share/nginx/html/*
 
+# Install curl for health check (wget in alpine busybox doesn't support localhost well)
+RUN apk add --no-cache curl
+
 # Copy compiled Angular bundle from builder stage
 COPY --from=builder /app/dist/ai-pulse-frontend/browser /usr/share/nginx/html
 
@@ -36,8 +39,8 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
-# Health check
+# Health check — curl is more reliable than wget in nginx:alpine
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:80/ || exit 1
+  CMD curl -f http://localhost/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
