@@ -21,7 +21,7 @@ COPY . .
 
 # Compile production bundle — NODE_OPTIONS increases heap limit to 1.5 GB
 # so Angular's esbuild compiler doesn't OOM-crash on small servers (t2.micro)
-RUN NODE_OPTIONS="--max-old-space-size=1536" npm run build -- --configuration production
+RUN NODE_OPTIONS="--max-old-space-size=1536" npm run build -- --configuration production --no-cache --max-workers=1
 
 # ── Stage 2: Serve with Nginx ─────────────────────────────────────────────────
 FROM nginx:1.27-alpine AS runner
