@@ -438,3 +438,24 @@ WHERE
 
 *File location: `docs/INTERVIEW-PREP.md`*  
 *Last updated: May 2026*
+
+---
+
+## SECTION 9 — RESUME BULLET POINTS EXPLAINED
+
+*If a recruiter points to a specific line on your resume, here is exactly how to explain it in plain English.*
+
+### 1. "Multi-stage Docker Compose pipeline"
+**What you say:** "Instead of manually installing Node.js and MySQL on the server, I packaged my code into Docker containers so it runs identically on any machine. 'Multi-stage' means I compiled the Angular code in the first stage, and then threw away the heavy build tools so the final production app is incredibly tiny and fast."
+
+### 2. "Integrated Google Gemini AI... reducing manual effort by 60%"
+**What you say:** "I connected the backend to Google's AI. When a manager types a market keyword (like 'summer heatwave'), the AI predicts what products will spike in demand. The backend automatically cross-references this with my live MySQL inventory to flag low-stock items before they run out. This automation saves managers huge amounts of time."
+
+### 3. "Optimistic Concurrency Control (OCC)"
+**What you say:** "This solves race conditions. Imagine two warehouse workers open the same stock record on their iPads at the exact same millisecond and both try to remove 10 items. Without OCC, the database overwrites Worker A's change, and the count is wrong. I fixed this by adding a 'version' number to the row. If the version changes before a worker hits save, the system blocks them and guarantees perfect data accuracy."
+
+### 4. "Nginx reverse proxy, Let's Encrypt HTTPS, and RBAC"
+**What you say:** "I built military-grade security. I used Nginx as a reverse proxy, meaning my Node.js backend is hidden from the public internet. I wrote an automated script to fetch real Let's Encrypt SSL certificates for HTTPS. And I implemented Role-Based Access Control (RBAC), ensuring Admins, Managers, and Warehouse workers only have access to their specific dashboards."
+
+### 5. "CI/CD pipeline enforcing 40+ Jest tests"
+**What you say:** "I built an automated GitHub Actions pipeline. Every time I push code, a cloud server automatically runs my 40+ Jest unit tests and checks for formatting errors. If my new code breaks a test, the pipeline blocks it from going to production, ensuring the codebase stays stable."
