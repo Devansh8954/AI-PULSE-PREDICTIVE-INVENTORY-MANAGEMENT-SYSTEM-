@@ -3,9 +3,21 @@ name: AI-Pulse CI/CD
 on:
   push:
     branches: [main, develop]
+    paths-ignore:
+      - '**.md'          # Skip for README, SETUP, CONTRIBUTING changes
+      - 'docs/**'        # Skip for docs folder changes
+      - 'LICENSE'        # Skip for license changes
+      - '.gitignore'
+      - '.gitattributes'
   pull_request:
     branches: [main, develop]
     types: [opened, synchronize, reopened]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.gitattributes'
 
 # Cancel in-progress runs for the same branch to save runner minutes
 concurrency:
