@@ -50,9 +50,7 @@ services:
 
   # ── Node.js Backend API ──────────────────────────────────────────────────────
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: devansh8954/ai-pulse-backend:latest
     container_name: ai_pulse_backend
     restart: unless-stopped
 
@@ -92,9 +90,7 @@ services:
 
   # ── Angular Frontend (Nginx) ─────────────────────────────────────────────────
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: devansh8954/ai-pulse-frontend:latest
     container_name: ai_pulse_frontend
     restart: unless-stopped
 
