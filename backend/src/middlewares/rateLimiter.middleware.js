@@ -7,7 +7,7 @@
  * Prevents brute-force and DDoS at the application layer.
  *
  * Dev mode  : localhost requests are skipped entirely — no limit.
- * Production: 100 requests per IP per 15-minute window (configurable via env).
+ * Production: 500 requests per IP per 15-minute window (configurable via env).
  * On breach → 429 Too Many Requests with Retry-After header.
  */
 
@@ -17,7 +17,7 @@ const isDev = (process.env.NODE_ENV || 'development') !== 'production';
 
 const rateLimiter = rateLimit({
   windowMs:         Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max:              Number(process.env.RATE_LIMIT_MAX)        || (isDev ? 2000 : 100),
+  max:              Number(process.env.RATE_LIMIT_MAX)        || (isDev ? 2000 : 500),
   standardHeaders:  true,   // include RateLimit-* headers in response
   legacyHeaders:    false,
 
