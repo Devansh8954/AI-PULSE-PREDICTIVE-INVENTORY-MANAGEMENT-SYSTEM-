@@ -29,15 +29,12 @@ FROM nginx:1.27-alpine AS runner
 # Remove the default Nginx landing page
 RUN rm -rf /usr/share/nginx/html/*
 
-# Install curl for health check and openssl for SSL cert generation
-RUN apk add --no-cache curl openssl
+# Install curl for health check, openssl for fallback certs, and certbot for Let's Encrypt
+RUN apk add --no-cache curl openssl certbot
 
-# Generate self-signed certificate for HTTPS
-RUN mkdir -p /etc/nginx/ssl && \
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout /etc/nginx/ssl/nginx-selfsigned.key \
-    -out /etc/nginx/ssl/nginx-selfsigned.crt \
-    -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+# Copy the startup script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Copy compiled Angular bundle from builder stage
 COPY --from=builder /app/dist/ai-pulse-frontend/browser /usr/share/nginx/html
@@ -51,4 +48,4 @@ EXPOSE 80 443
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -k -f https://localhost/ || exit 1
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/entrypoint.sh"]
