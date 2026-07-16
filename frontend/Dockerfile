@@ -19,8 +19,9 @@ RUN npm ci --prefer-offline
 # Copy full source (respects .dockerignore)
 COPY . .
 
-# Compile production bundle (outputs to dist/ai-pulse-frontend/)
-RUN npm run build -- --configuration production
+# Compile production bundle — NODE_OPTIONS increases heap limit to 1.5 GB
+# so Angular's esbuild compiler doesn't OOM-crash on small servers (t2.micro)
+RUN NODE_OPTIONS="--max-old-space-size=1536" npm run build -- --configuration production
 
 # ── Stage 2: Serve with Nginx ─────────────────────────────────────────────────
 FROM nginx:1.27-alpine AS runner
