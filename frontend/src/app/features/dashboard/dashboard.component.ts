@@ -63,8 +63,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     // ── Set filter predicate BEFORE subscribing to valueChanges ──────────────
-    // Moving this here (rather than ngAfterViewInit) ensures the predicate
-    // is active from the very first keystroke.
     this.dataSource.filterPredicate = (row: DashboardRow, filter: string) => {
       const parts = filter.split('|');
       const textFilter = parts[0] ?? '';
@@ -130,13 +128,20 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Active signal type filter ('' = all) */
   activeTypeFilter = '';
 
-  /** Available quick-filter signal types */
+  /**
+   * Available quick-filter signal types.
+   * Values MUST match the DB ENUM in database/schema.sql trend_signals.signal_type.
+   * Old values (DEMAND_SURGE, SUPPLY_SHOCK, SEASONAL, TREND_SPIKE) did NOT exist
+   * in the ENUM and caused filters to never match any rows.
+   */
   readonly signalTypeFilters = [
-    { label: 'All',           value: '' },
-    { label: 'Demand Surge',  value: 'DEMAND_SURGE' },
-    { label: 'Supply Shock',  value: 'SUPPLY_SHOCK' },
-    { label: 'Seasonal',      value: 'SEASONAL' },
-    { label: 'Trend Spike',   value: 'TREND_SPIKE' },
+    { label: 'All',                 value: '' },
+    { label: 'Demand Spike',        value: 'DEMAND_SPIKE' },
+    { label: 'Demand Drop',         value: 'DEMAND_DROP' },
+    { label: 'Seasonal Peak',       value: 'SEASONAL_PEAK' },
+    { label: 'Social Buzz',         value: 'SOCIAL_BUZZ' },
+    { label: 'Competitor Stockout', value: 'COMPETITOR_STOCKOUT' },
+    { label: 'Price Sensitivity',   value: 'PRICE_SENSITIVITY' },
   ];
 
   setTypeFilter(value: string): void {
