@@ -459,3 +459,18 @@ WHERE
 
 ### 5. "CI/CD pipeline enforcing 40+ Jest tests"
 **What you say:** "I built an automated GitHub Actions pipeline. Every time I push code, a cloud server automatically runs my 40+ Jest unit tests and checks for formatting errors. If my new code breaks a test, the pipeline blocks it from going to production, ensuring the codebase stays stable."
+
+---
+
+## SECTION 10 — DEFENDING YOUR RESUME METRICS
+
+*Interviewers will often ask "Where did you get this number from?" to see if you are lying. Never say "I guessed." Use these exact explanations to prove your engineering logic.*
+
+### 1. "Reducing manual restocking efforts by 60%"
+**What to say:** "Without the AI, a warehouse manager would have to manually scroll through 100% of our product catalog every week, guessing what might run out of stock. By integrating the Gemini AI, the system proactively scans market keywords and flags only the specific items that are likely to spike in demand. Managers now only review the AI's flagged alerts rather than the whole database. This targeted approach eliminated more than half of their manual review time, which I conservatively estimated at a 60% reduction."
+
+### 2. "85%+ test coverage and 40+ Jest tests"
+**What to say:** "I used Jest's built-in coverage tool (jest --coverage). I didn't waste time testing basic boilerplate code; instead, I wrote over 40 unit tests targeting the most critical parts of the backend: the JWT Authentication middleware, the Role-Based Access Control (RBAC), and the Optimistic Concurrency Control (OCC) logic. Because I rigorously tested those core service files, my Jest coverage report consistently returned over 85%."
+
+### 3. "Maintaining 99.9% uptime" (From Chatbot Project)
+**What to say:** "By deploying on a modern cloud platform and enforcing a strict GitHub Actions CI/CD pipeline, I ensured that bad code never made it to production. I also implemented a /health endpoint that the cloud provider pings to ensure the server is alive. Because of this automated safety net, the server never experienced a major crash, resulting in standard enterprise three-nines (99.9%) uptime."
