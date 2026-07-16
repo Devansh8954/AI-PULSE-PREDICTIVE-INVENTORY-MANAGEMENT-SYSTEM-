@@ -6,10 +6,21 @@
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Angular](https://img.shields.io/badge/Angular-17.x-DD0031?logo=angular&logoColor=white)](https://angular.io/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![AWS EC2](https://img.shields.io/badge/AWS-EC2_Deployed-FF9900?logo=amazonaws&logoColor=white)](https://aws.amazon.com/)
+[![License](https://img.shields.io/badge/License-All_Rights_Reserved-red.svg)](LICENSE)
 [![CI](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows)
 
 > An enterprise-grade, AI-driven inventory platform that predicts stockouts before they happen — combining real-time Google Gemini trend analysis with historical sales velocity and vendor lead-time data.
+
+### 🚀 [Live Demo → https://ai-pulse-inventory.duckdns.org](https://ai-pulse-inventory.duckdns.org/)
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@aipulse.com | password123 |
+| Manager | manager@aipulse.com | password123 |
+| Analyst | analyst@aipulse.com | password123 |
+| Warehouse | warehouse@aipulse.com | password123 |
 
 </div>
 
@@ -138,7 +149,27 @@ AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-/
 
 Full setup instructions (including screenshots of expected output) are in **[SETUP.md](SETUP.md)**.
 
-The short version:
+### 🐳 Option 1 — Docker (Recommended, One Command)
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/Devansh8954/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-.git
+cd AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-
+
+# 2. Set your secrets
+cp backend/.env.example backend/.env
+# Edit backend/.env — set DB_PASSWORD and GEMINI_API_KEY
+
+# 3. Start everything (MySQL + Backend + Frontend)
+docker compose up --build -d
+
+# 4. Open in browser
+open http://localhost
+```
+
+> Docker handles the database, backend, and frontend automatically. No manual setup needed.
+
+### 💻 Option 2 — Manual Local Setup
 
 ```bash
 # 1. Create the database
@@ -328,8 +359,30 @@ See `backend/.env.example` for the full list. The only two you must set are:
 
 ---
 
+## ☁️ Production Deployment
+
+This application is deployed on **AWS EC2** with Docker Compose:
+
+| Component | Technology |
+|-----------|------------|
+| **Cloud** | AWS EC2 (Ubuntu, us-east-1) |
+| **Containers** | Docker Compose (3 services) |
+| **Web Server** | Nginx (SSL termination + reverse proxy) |
+| **SSL/HTTPS** | Let's Encrypt via Certbot |
+| **DNS** | DuckDNS (custom subdomain) |
+| **Auto-restart** | systemd service (survives EC2 reboots) |
+| **Monitoring** | AWS CloudWatch + billing alerts |
+
+```
+Internet → DuckDNS → Elastic IP → EC2 → Nginx (443) → Angular + Node.js + MySQL
+```
+
+---
+
 <div align="center">
 
-Built as a **SDE-1 portfolio project** to demonstrate full-stack architecture, AI integration, and production-grade engineering patterns.
+Built as a **full-stack portfolio project** to demonstrate cloud deployment, AI integration, containerization, and production-grade engineering patterns.
+
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-ai--pulse--inventory.duckdns.org-success?style=for-the-badge)](https://ai-pulse-inventory.duckdns.org/)
 
 </div>
