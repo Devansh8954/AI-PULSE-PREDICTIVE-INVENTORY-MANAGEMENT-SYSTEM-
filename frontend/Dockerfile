@@ -29,8 +29,15 @@ FROM nginx:1.27-alpine AS runner
 # Remove the default Nginx landing page
 RUN rm -rf /usr/share/nginx/html/*
 
-# Install curl for health check (wget in alpine busybox doesn't support localhost well)
-RUN apk add --no-cache curl
+# Install curl for health check and openssl for SSL cert generation
+RUN apk add --no-cache curl openssl
+
+# Generate self-signed certificate for HTTPS
+RUN mkdir -p /etc/nginx/ssl && \
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/nginx/ssl/nginx-selfsigned.key \
+    -out /etc/nginx/ssl/nginx-selfsigned.crt \
+    -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
 
 # Copy compiled Angular bundle from builder stage
 COPY --from=builder /app/dist/ai-pulse-frontend/browser /usr/share/nginx/html
@@ -38,10 +45,10 @@ COPY --from=builder /app/dist/ai-pulse-frontend/browser /usr/share/nginx/html
 # Copy our custom Nginx config (handles Angular's HTML5 routing)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+EXPOSE 80 443
 
 # Health check — curl is more reliable than wget in nginx:alpine
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost/ || exit 1
+  CMD curl -k -f https://localhost/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
