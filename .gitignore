@@ -67,3 +67,7 @@ coverage/
 docker-compose.override.yml
 # Docker volumes synced locally (if you ever use bind-mounts for db_data)
 .docker/
+
+docs/INTERVIEW_QA.md
+docs/PRODUCTION.md
+docs/aws_management_guide.md.resolved
