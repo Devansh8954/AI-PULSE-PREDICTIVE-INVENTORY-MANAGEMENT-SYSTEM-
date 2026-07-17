@@ -25,10 +25,10 @@
     pointer-events: none;
   }
 
-  @media (max-width: 1200px) { grid-template-columns: 1fr 280px; }
+  @media (max-width: 1200px) { grid-template-columns: 1fr 260px; }
   @media (max-width: 1024px) { grid-template-columns: 1fr; }
   @media (max-width: 768px)  { padding: 0 20px; gap: 16px; }
-  @media (max-width: 480px)  { padding: 0 16px; gap: 12px; }
+  @media (max-width: 480px)  { padding: 0 12px; gap: 12px; }
 }
 
 
@@ -168,6 +168,9 @@
 
 .analyst-search {
   width: 180px;
+
+  @media (max-width: 600px) { width: 100%; }
+
   ::ng-deep {
     .mat-mdc-form-field-flex { background: rgba(255,255,255,0.04) !important; }
     .mat-mdc-input-element { color: #e6edf3 !important; font-size: 12px !important; }

@@ -92,10 +92,14 @@
   &__actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     color: #8b949e;
     font-size: 12px;
     flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+
+    @media (max-width: 480px) { gap: 6px; font-size: 11px; }
   }
 
   &__status-dot {
@@ -263,6 +267,8 @@
     gap: 14px;
     align-items: flex-start;
     flex-wrap: wrap;
+
+    @media (max-width: 600px) { flex-direction: column; gap: 10px; }
   }
 
   &__report {
@@ -278,9 +284,9 @@
 
 .keyword-field {
   flex: 1;
-  min-width: 220px;
+  min-width: 180px;
 
-  @media (max-width: 480px) { min-width: 100%; }
+  @media (max-width: 600px) { min-width: 100%; }
 
   ::ng-deep {
     .mat-mdc-form-field-flex { background: rgba(255,255,255,0.04) !important; }
@@ -485,7 +491,7 @@
 
 .trend-table {
   width: 100%;
-  min-width: 800px;
+  min-width: 700px;
 }
 
 /* ── Alert row highlight ─────────────────────────────── */

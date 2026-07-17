@@ -66,12 +66,21 @@ html, body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 14px;
+  /* Fluid base: 13px @ 320px → 14px @ 1280px */
+  font-size: clamp(13px, 0.85vw + 10.3px, 14px);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  /* Smooth momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
 }
+
+/* ── Responsive images & media ───────────────────────────── */
+img, video, svg { max-width: 100%; height: auto; }
+
+/* ── Prevent layout blowout on small screens ─────────────── */
+* { min-width: 0; }
 
 /* ── Scrollbar ───────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

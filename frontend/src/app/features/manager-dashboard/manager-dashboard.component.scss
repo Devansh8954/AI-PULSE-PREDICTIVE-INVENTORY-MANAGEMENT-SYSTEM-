@@ -129,24 +129,27 @@
 
 // ── Workflow ownership banner ─────────────────────────────────────────────────
 .workflow-banner {
-  display: flex; align-items: center; gap: 16px;
+  display: flex; align-items: flex-start; gap: 16px;
   margin: 4px 20px 12px;
   padding: 14px 18px;
   background: rgba(255,255,255,0.02);
   border: 1px solid #30363d;
   border-radius: 10px;
   flex-wrap: wrap;
+
+  @media (max-width: 600px) { gap: 10px; padding: 12px 14px; }
 }
 
 .workflow-handoff {
   color: #484f58; font-size: 24px;
   width: 24px; height: 24px;
   flex-shrink: 0;
+  @media (max-width: 600px) { display: none; }
 }
 
 .workflow-step {
   display: flex; align-items: flex-start; gap: 12px;
-  flex: 1; min-width: 220px;
+  flex: 1; min-width: 160px;
 
   &__icon {
     width: 40px; height: 40px; border-radius: 10px;
@@ -284,7 +287,10 @@
 
 // ── PO form helpers ───────────────────────────────────────────────────────────
 .form-row { margin-bottom: 16px; }
-.two-col  { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.two-col  {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}
 .full-width { width: 100%; }
 
 .line-items-header {
@@ -296,10 +302,15 @@
 .line-item-row {
   display: flex; align-items: flex-start; gap: 10px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
 
-  .flex-grow  { flex: 1; }
-  .qty-field  { width: 90px;  flex-shrink: 0; }
-  .cost-field { width: 130px; flex-shrink: 0; }
+  .flex-grow  { flex: 1; min-width: 140px; }
+  .qty-field  { width: 90px;  flex-shrink: 0;
+    @media (max-width: 480px) { width: 100%; }
+  }
+  .cost-field { width: 130px; flex-shrink: 0;
+    @media (max-width: 480px) { width: 100%; }
+  }
 }
 
 .modal-actions {
