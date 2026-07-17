@@ -1,0 +1,234 @@
+# =============================================================================
+# 1-ci-tests.yml
+# PURPOSE : Lint + Unit Tests only. Fast feedback on every code change.
+# TRIGGERS: push to main/develop  |  pull_request to main/develop
+# SKIPS   : docs, markdown, config-only changes
+# DOES NOT: build Docker, push images, or deploy anything
+# =============================================================================
+
+name: 🧪 CI — Lint & Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      # Only run when actual code changes — skip docs/config noise
+      - 'backend/src/**'
+      - 'backend/package*.json'
+      - 'backend/tsconfig*.json'
+      - 'backend/.eslintrc*'
+      - 'frontend/src/**'
+      - 'frontend/package*.json'
+      - 'frontend/tsconfig*.json'
+      - 'frontend/.eslintrc*'
+      - 'frontend/angular.json'
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'backend/src/**'
+      - 'backend/package*.json'
+      - 'backend/tsconfig*.json'
+      - 'backend/.eslintrc*'
+      - 'frontend/src/**'
+      - 'frontend/package*.json'
+      - 'frontend/tsconfig*.json'
+      - 'frontend/.eslintrc*'
+      - 'frontend/angular.json'
+
+# Cancel older runs for the same branch/PR to save runner minutes
+concurrency:
+  group: ci-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 1 — Backend: Lint
+  # ════════════════════════════════════════════════════════════════════════════
+  backend-lint:
+    name: 🔍 Backend — ESLint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci --prefer-offline
+      - run: npm run lint
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 2 — Backend: Unit Tests + Coverage
+  # ════════════════════════════════════════════════════════════════════════════
+  backend-test:
+    name: 🧪 Backend — Unit Tests & Coverage
+    runs-on: ubuntu-latest
+    needs: backend-lint
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci --prefer-offline
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci-test-secret-key-minimum-32-chars-required
+          GEMINI_API_KEY: ci-mock-key
+          DB_HOST: localhost
+          DB_PORT: 3306
+          DB_NAME: ai_pulse_test
+          DB_USER: root
+          DB_PASSWORD: ci-test-placeholder
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          echo "## 🧪 Backend Coverage" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat coverage/coverage-summary.json 2>/dev/null | \
+            node -e "
+              const fs=require('fs');
+              const d=JSON.parse(fs.readFileSync('/dev/stdin','utf8')).total;
+              console.log('Lines:      ' + d.lines.pct + '%');
+              console.log('Functions:  ' + d.functions.pct + '%');
+              console.log('Branches:   ' + d.branches.pct + '%');
+              console.log('Statements: ' + d.statements.pct + '%');
+            " 2>/dev/null || echo "Coverage summary not available"
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage-${{ github.run_number }}
+          path: backend/coverage/
+          retention-days: 7
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 3 — Frontend: TypeScript Type-Check
+  # Note: frontend/package.json "lint" script runs `tsc --noEmit` (type-check),
+  # not ESLint. This catches type errors before tests run.
+  # ════════════════════════════════════════════════════════════════════════════
+  frontend-lint:
+    name: 🔍 Frontend — TypeScript Type-Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci --prefer-offline
+      - run: npm run lint
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 4 — Frontend: Unit Tests + Coverage
+  # ════════════════════════════════════════════════════════════════════════════
+  frontend-test:
+    name: 🧪 Frontend — Karma Unit Tests & Coverage
+    runs-on: ubuntu-latest
+    needs: frontend-lint
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Chrome (headless)
+        uses: browser-actions/setup-chrome@v1
+
+      - run: npm ci --prefer-offline
+
+      - name: Run unit tests (headless Chrome)
+        run: npm run test:ci
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          echo "## 🧪 Frontend Coverage" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat coverage/ai-pulse-frontend/coverage-summary.json 2>/dev/null | \
+            node -e "
+              const fs=require('fs');
+              const d=JSON.parse(fs.readFileSync('/dev/stdin','utf8')).total;
+              console.log('Lines:      ' + d.lines.pct + '%');
+              console.log('Functions:  ' + d.functions.pct + '%');
+              console.log('Branches:   ' + d.branches.pct + '%');
+              console.log('Statements: ' + d.statements.pct + '%');
+            " 2>/dev/null || echo "Coverage summary not available"
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage-${{ github.run_number }}
+          path: frontend/coverage/
+          retention-days: 7
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 5 — Gate: All tests must pass
+  # ════════════════════════════════════════════════════════════════════════════
+  all-tests-pass:
+    name: ✅ All Tests Passed
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [backend-lint, backend-test, frontend-lint, frontend-test]
+
+    steps:
+      - name: Check results
+        run: |
+          echo "## CI Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| backend-lint  | ${{ needs.backend-lint.result }}  |" >> $GITHUB_STEP_SUMMARY
+          echo "| backend-test  | ${{ needs.backend-test.result }}  |" >> $GITHUB_STEP_SUMMARY
+          echo "| frontend-lint | ${{ needs.frontend-lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| frontend-test | ${{ needs.frontend-test.result }} |" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.backend-lint.result }}"   != "success" ||
+                "${{ needs.backend-test.result }}"   != "success" ||
+                "${{ needs.frontend-lint.result }}"  != "success" ||
+                "${{ needs.frontend-test.result }}"  != "success" ]]; then
+            echo "❌ One or more test jobs failed." | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          echo "✅ All tests passed." | tee -a $GITHUB_STEP_SUMMARY

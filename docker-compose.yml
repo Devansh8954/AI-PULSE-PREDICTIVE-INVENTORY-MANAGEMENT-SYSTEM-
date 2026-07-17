@@ -26,9 +26,8 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE:      ${DB_NAME:-ai_pulse_db}
 
-    ports:
-      # Expose to host only in dev so you can connect with MySQL Workbench / DBeaver
-      - "3306:3306"
+    # No ports exposed — DB is internal only. Access via Docker network.
+    # For local dev with a DB GUI, use docker-compose.override.yml to add 3306:3306.
 
     volumes:
       # Persist data across container restarts

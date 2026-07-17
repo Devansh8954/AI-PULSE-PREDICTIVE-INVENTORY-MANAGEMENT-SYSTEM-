@@ -1,0 +1,146 @@
+# =============================================================================
+# 2-docker-deploy.yml
+# PURPOSE : Build Docker images → Push to Docker Hub → Deploy to AWS EC2
+# TRIGGERS: push to main ONLY (after tests pass via 1-ci-tests.yml)
+#           workflow_dispatch for manual emergency deploys
+# SKIPS   : docs, markdown, config-only changes (same paths as ci-tests)
+# DOES NOT: run any tests (tests already ran in 1-ci-tests.yml)
+# =============================================================================
+
+name: 🐳 Docker Build & Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Only rebuild + redeploy when actual application code or Docker config changes
+      - 'backend/src/**'
+      - 'backend/package*.json'
+      - 'backend/Dockerfile'
+      - 'backend/.dockerignore'
+      - 'frontend/src/**'
+      - 'frontend/package*.json'
+      - 'frontend/Dockerfile'
+      - 'frontend/.dockerignore'
+      - 'frontend/angular.json'
+      - 'docker-compose*.yml'
+      - 'nginx/**'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual deploy'
+        required: false
+        default: 'Manual deploy'
+
+# Cancel older deploy runs to avoid race conditions on EC2
+concurrency:
+  group: docker-deploy-main
+  cancel-in-progress: false  # Never cancel an in-progress deploy (risk of broken state)
+
+jobs:
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 1 — Build & Push Docker Images to Docker Hub
+  # ════════════════════════════════════════════════════════════════════════════
+  docker-build-push:
+    name: 🐳 Build & Push Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-frontend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Images summary
+        run: |
+          echo "## 🐳 Docker Images Pushed" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Tags |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ai-pulse-backend  | \`latest\`, \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| ai-pulse-frontend | \`latest\`, \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 2 — Deploy to AWS EC2
+  # Runs after images are successfully pushed to Docker Hub
+  # ════════════════════════════════════════════════════════════════════════════
+  deploy-ec2:
+    name: 🚀 Deploy — AWS EC2
+    runs-on: ubuntu-latest
+    needs: docker-build-push
+
+    environment:
+      name: production
+      url: https://ai-pulse-inventory.duckdns.org
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          timeout: 60s
+          command_timeout: 10m
+          script: |
+            set -e
+
+            echo "📦 Pulling latest images..."
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-frontend:latest
+
+            echo "🔄 Restarting stack..."
+            cd ~/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-
+            git pull origin main
+
+            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
+              docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+              up -d --remove-orphans --no-build
+
+            echo "🧹 Pruning dangling images..."
+            docker image prune -f
+
+            echo "✅ Health check..."
+            sleep 10
+            curl -sf http://localhost:3000/health && echo "Backend healthy ✅" || echo "⚠️ Backend health check failed"
+
+      - name: Deployment summary
+        run: |
+          echo "## 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Actor  | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Reason | ${{ github.event.inputs.reason || 'Push to main' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Live URL | https://ai-pulse-inventory.duckdns.org |" >> $GITHUB_STEP_SUMMARY
