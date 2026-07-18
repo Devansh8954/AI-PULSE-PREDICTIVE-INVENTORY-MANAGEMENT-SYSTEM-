@@ -84,8 +84,24 @@
   display: inline-flex; align-items: center; gap: 4px;
   border-radius: 6px !important;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 
-  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+  mat-icon { font-size: 14px; width: 14px; height: 14px; flex-shrink: 0; }
+
+  // Collapse to icon-only on small screens
+  .btn-label {
+    display: inline;
+    @media (max-width: 600px) { display: none; }
+  }
+
+  // On very small screens: tighten padding so icon fits
+  @media (max-width: 600px) {
+    padding: 0 8px;
+    height: 30px; line-height: 30px;
+    min-width: 30px;
+    justify-content: center;
+  }
 
   &--dispatch {
     border-color: rgba(163,113,247,0.4) !important;
@@ -100,7 +116,15 @@
   }
 }
 
-.actions-cell { display: flex; align-items: center; gap: 6px; }
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
+
+  @media (max-width: 600px) { gap: 4px; }
+}
 .row-spinner  { display: inline-block; }
 .row--updating { opacity: 0.6; pointer-events: none; }
 
@@ -148,6 +172,11 @@
   width: min(440px, 94vw);
   text-align: center;
   box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+
+  @media (max-width: 480px) {
+    padding: 24px 18px 20px;
+    border-radius: 10px;
+  }
 }
 
 .confirm-icon {
@@ -175,10 +204,18 @@
 }
 
 .confirm-actions {
-  display: flex; justify-content: center; gap: 12px;
+  display: flex; justify-content: center; gap: 10px;
   flex-wrap: wrap;
   padding-top: 20px;
   border-top: 1px solid #30363d;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+
+    button { width: 100%; justify-content: center; }
+  }
 }
 
 .btn-dispatch {
