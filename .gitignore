@@ -68,6 +68,18 @@ docker-compose.override.yml
 # Docker volumes synced locally (if you ever use bind-mounts for db_data)
 .docker/
 
+INTERVIEW.md
+interview.md
+*interview*
+*Interview*
+*INTERVIEW*
+docs/
+**/docs/
+materials/
+material/
+*.private
+private/
 docs/INTERVIEW_QA.md
 docs/PRODUCTION.md
 docs/aws_management_guide.md.resolved
+

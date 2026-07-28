@@ -359,6 +359,14 @@ See `backend/.env.example` for the full list. The only two you must set are:
 
 ---
 
+## 🎯 Technical Interview Prep & Deep-Dive Q&A
+
+Looking for system design decisions, concurrency trade-offs, and FAANG-level technical interview answers for this project?
+
+👉 **[Read the Full SDE Technical Interview Prep Guide (docs/interview.md)](docs/interview.md)**
+
+---
+
 ## ☁️ Production Deployment
 
 This application is deployed on **AWS EC2** with Docker Compose:
