@@ -1,15 +1,15 @@
 <div align="center">
 
-# ⚡ AI-Pulse
-### Predictive Inventory Management System
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:007acc,50:28a745,100:0f0c29&height=220&section=header&text=AI-Pulse%20Inventory&fontSize=52&fontColor=ffffff&fontAlignY=38&desc=Predictive%20Inventory%20Management%20%7C%20Gemini%20AI%20%7C%20AWS%20EC2%20%7C%20Angular&descAlignY=60&descSize=16" width="100%"/>
 
-[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Angular](https://img.shields.io/badge/Angular-17.x-DD0031?logo=angular&logoColor=white)](https://angular.io/)
-[![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
-[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![AWS EC2](https://img.shields.io/badge/AWS-EC2_Deployed-FF9900?logo=amazonaws&logoColor=white)](https://aws.amazon.com/)
-[![License](https://img.shields.io/badge/License-All_Rights_Reserved-red.svg)](LICENSE)
-[![CI](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows)
+[![Angular](https://img.shields.io/badge/Angular-17.x-DD0031?style=for-the-badge&logo=angular&logoColor=white)](https://angular.io/)
+[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![AWS EC2](https://img.shields.io/badge/AWS-EC2_Deployed-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white)](https://aws.amazon.com/)
+[![Google Gemini AI](https://img.shields.io/badge/Google%20Gemini%20AI-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-28a745?style=for-the-badge)](https://ai-pulse-inventory.duckdns.org)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](.github/workflows)
 
 > An enterprise-grade, AI-driven inventory platform that predicts stockouts before they happen — combining real-time Google Gemini trend analysis with historical sales velocity and vendor lead-time data.
 
@@ -17,10 +17,10 @@
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | admin@aipulse.com | password123 |
-| Manager | manager@aipulse.com | password123 |
-| Analyst | analyst@aipulse.com | password123 |
-| Warehouse | warehouse@aipulse.com | password123 |
+| **Admin** | `admin@aipulse.com` | `password123` |
+| **Manager** | `manager@aipulse.com` | `password123` |
+| **Analyst** | `analyst@aipulse.com` | `password123` |
+| **Warehouse** | `warehouse@aipulse.com` | `password123` |
 
 </div>
 
