@@ -105,7 +105,7 @@ jobs:
 
     steps:
       - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
@@ -121,7 +121,8 @@ jobs:
 
             echo "🔄 Restarting stack..."
             cd ~/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
 
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
               docker compose -f docker-compose.yml -f docker-compose.prod.yml \
