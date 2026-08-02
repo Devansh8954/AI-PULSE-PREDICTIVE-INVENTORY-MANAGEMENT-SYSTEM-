@@ -1,20 +1,5 @@
 'use strict';
 
-/**
- * db.config.js
- * ------------
- * Sequelize instance connected to MySQL.
- *
- * Design decisions:
- *  - Single shared instance (singleton) — imported by all models.
- *  - Connection pool configured for a mid-size API workload.
- *  - `timezone: '+00:00'` ensures all timestamps are stored/read as UTC.
- *  - `logging` is disabled in production to avoid log flooding; in
- *    development it routes SQL to Winston so it appears in structured logs.
- *  - `define.underscored: true` maps camelCase JS fields → snake_case DB columns.
- *  - `define.paranoid: true` enables soft-delete (deletedAt) globally.
- */
-
 require('dotenv').config();
 
 const { Sequelize } = require('sequelize');
@@ -29,50 +14,36 @@ const {
   NODE_ENV    = 'development',
 } = process.env;
 
-// ── Fail fast: never start without a DB password configured ─────────────────
+// Fail fast — never boot without a DB password
 if (!DB_PASSWORD) {
-  throw new Error(
-    '❌  DB_PASSWORD is not set. Add it to your .env file (see .env.example).',
-  );
+  throw new Error('DB_PASSWORD is not set. Add it to your .env file (see .env.example).');
 }
 
 const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
-  dialect: 'mysql',
-  host:    DB_HOST,
-  port:    Number(DB_PORT),
+  dialect:  'mysql',
+  host:     DB_HOST,
+  port:     Number(DB_PORT),
 
-  // ── Connection pool
-  pool: {
-    max:     20,   // maximum number of connections in pool
-    min:     2,    // minimum connections always kept alive
-    acquire: 30000, // ms to wait before throwing "unable to acquire connection"
-    idle:    10000, // ms a connection can sit idle before being released
-  },
+  // Connection pool — sized for a mid-scale API workload
+  pool: { max: 20, min: 2, acquire: 30_000, idle: 10_000 },
 
-  // ── UTC everywhere
-  timezone: '+00:00',
+  timezone: '+00:00', // store all timestamps as UTC
 
-  // ── SQL logging: structured via Winston in dev, silent in production
-  logging: NODE_ENV === 'production'
-    ? false
-    : (sql) => logger.debug({ sql }),
+  // SQL logging: structured via Winston in dev, silent in production
+  logging: NODE_ENV === 'production' ? false : (sql) => logger.debug({ sql }),
 
-  // ── Global model options applied to every model automatically
   define: {
-    underscored:    true,   // JS: createdAt  → DB: created_at
-    timestamps:     true,
-    paranoid:       true,   // Adds deletedAt; DELETE becomes a soft-delete
-    freezeTableName: false, // Sequelize will still pluralise unless overridden per model
+    underscored:     true,  // createdAt → created_at
+    timestamps:      true,
+    paranoid:        true,  // soft-delete via deletedAt
+    freezeTableName: false,
   },
 });
 
-/**
- * Verify connectivity at startup.
- * Called from app.js — if this rejects, the server should not boot.
- */
+/** Verify connectivity at startup. If this rejects, the server should not boot. */
 const connectDB = async () => {
   await sequelize.authenticate();
-  logger.info('✅  MySQL connection established via Sequelize.');
+  logger.info('MySQL connection established via Sequelize.');
 };
 
 module.exports = { sequelize, connectDB };

@@ -1,61 +1,41 @@
 'use strict';
 
 /**
- * auth.middleware.js
- * ------------------
- * JWT verification + Role-Based Access Control (RBAC) factory.
+ * auth.middleware.js — JWT verification + Role-Based Access Control (RBAC)
  *
  * Usage in routes:
- *   auth(['ADMIN', 'MANAGER'])  → only ADMIN and MANAGER may proceed
+ *   auth(['ADMIN', 'MANAGER'])  → only those roles may proceed
  *   auth()                      → any authenticated user may proceed
  *
- * Token format expected in header:
- *   Authorization: Bearer <JWT>
+ * Token format: Authorization: Bearer <JWT>
  */
 
-const jwt         = require('jsonwebtoken');
-const { secret }  = require('../config/jwt.config');
-const AppError    = require('../errors/AppError');
+const jwt        = require('jsonwebtoken');
+const { secret } = require('../config/jwt.config');
+const AppError   = require('../errors/AppError');
 
-/**
- * Returns an Express middleware that verifies JWT and checks allowed roles.
- * @param {string[]} [allowedRoles] - If empty/omitted, any valid token passes.
- */
-const auth = (allowedRoles = []) => {
-  return (req, res, next) => {
-    // ── 1. Extract token
-    const authHeader = req.headers['authorization'] || '';
-    const token      = authHeader.startsWith('Bearer ')
-      ? authHeader.slice(7).trim()
-      : null;
+/** Returns middleware that verifies JWT and enforces allowed roles. */
+const auth = (allowedRoles = []) => (req, res, next) => {
+  const authHeader = req.headers['authorization'] || '';
+  const token      = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
 
-    if (!token) {
-      return next(new AppError('Authentication token missing. Please log in.', 401));
-    }
+  if (!token) return next(new AppError('Authentication token missing. Please log in.', 401));
 
-    // ── 2. Verify signature & expiry
-    let decoded;
-    try {
-      decoded = jwt.verify(token, secret);
-    } catch (err) {
-      // JsonWebTokenError or TokenExpiredError → caught in errorHandler
-      return next(err);
-    }
+  let decoded;
+  try {
+    decoded = jwt.verify(token, secret);
+  } catch (err) {
+    return next(err); // JsonWebTokenError / TokenExpiredError → caught in errorHandler
+  }
 
-    // ── 3. Role check
-    if (allowedRoles.length > 0 && !allowedRoles.includes(decoded.role)) {
-      return next(
-        new AppError(
-          `Access denied. Required roles: [${allowedRoles.join(', ')}]. Your role: ${decoded.role}.`,
-          403,
-        ),
-      );
-    }
+  if (allowedRoles.length > 0 && !allowedRoles.includes(decoded.role)) {
+    return next(new AppError(
+      `Access denied. Required roles: [${allowedRoles.join(', ')}]. Your role: ${decoded.role}.`, 403,
+    ));
+  }
 
-    // ── 4. Attach user context for downstream use
-    req.user = decoded;
-    next();
-  };
+  req.user = decoded; // attach user context for downstream handlers
+  next();
 };
 
 module.exports = auth;

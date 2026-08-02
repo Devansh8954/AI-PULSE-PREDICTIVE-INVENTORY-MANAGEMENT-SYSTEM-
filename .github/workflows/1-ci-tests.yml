@@ -1,26 +1,23 @@
-# =============================================================================
-# 1-ci-tests.yml
-# PURPOSE : Lint + Unit Tests only. Fast feedback on every code change.
-# TRIGGERS: push to main/develop  |  pull_request to main/develop
-# SKIPS   : docs, markdown, config-only changes
-# DOES NOT: build Docker, push images, or deploy anything
-# =============================================================================
+name: CI - Lint, Tests and PR Quality Gate
 
-name: 🧪 CI — Lint & Tests
+# This single file handles ALL pull-request checks:
+#   Job 1: Backend lint (ESLint)
+#   Job 2: Backend unit tests + coverage upload
+#   Job 3: Frontend type-check
+#   Job 4: Frontend unit tests (headless Chrome)
+#   Job 5: PR title validation (Conventional Commits)
+#   Job 6: Frontend bundle size report comment
+#   Job 7: Gate — fails the PR if any job above failed
 
 on:
   push:
     branches: [main, develop]
     paths:
-      # Only run when actual code changes — skip docs/config noise
       - 'backend/src/**'
       - 'backend/package*.json'
-      - 'backend/tsconfig*.json'
       - 'backend/.eslintrc*'
       - 'frontend/src/**'
       - 'frontend/package*.json'
-      - 'frontend/tsconfig*.json'
-      - 'frontend/.eslintrc*'
       - 'frontend/angular.json'
   pull_request:
     branches: [main, develop]
@@ -28,67 +25,57 @@ on:
     paths:
       - 'backend/src/**'
       - 'backend/package*.json'
-      - 'backend/tsconfig*.json'
       - 'backend/.eslintrc*'
       - 'frontend/src/**'
       - 'frontend/package*.json'
-      - 'frontend/tsconfig*.json'
-      - 'frontend/.eslintrc*'
       - 'frontend/angular.json'
 
-# Cancel older runs for the same branch/PR to save runner minutes
+# Cancel older runs for the same branch/PR — saves runner minutes
 concurrency:
-  group: ci-tests-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   NODE_VERSION: '20'
 
+permissions:
+  contents: read
+  pull-requests: write  # needed for the bundle-size PR comment
+
 jobs:
-  # ════════════════════════════════════════════════════════════════════════════
-  # JOB 1 — Backend: Lint
-  # ════════════════════════════════════════════════════════════════════════════
+  # ── Job 1: Backend Lint ──────────────────────────────────────────────────────
   backend-lint:
-    name: 🔍 Backend — ESLint
+    name: Backend ESLint
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: backend/package-lock.json
-
       - run: npm ci --prefer-offline
       - run: npm run lint
 
-  # ════════════════════════════════════════════════════════════════════════════
-  # JOB 2 — Backend: Unit Tests + Coverage
-  # ════════════════════════════════════════════════════════════════════════════
+  # ── Job 2: Backend Unit Tests + Coverage ────────────────────────────────────
   backend-test:
-    name: 🧪 Backend — Unit Tests & Coverage
+    name: Backend Unit Tests and Coverage
     runs-on: ubuntu-latest
     needs: backend-lint
     defaults:
       run:
         working-directory: backend
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: backend/package-lock.json
-
       - run: npm ci --prefer-offline
-
       - name: Run tests with coverage
         run: npm run test:coverage
         env:
@@ -100,11 +87,10 @@ jobs:
           DB_NAME: ai_pulse_test
           DB_USER: root
           DB_PASSWORD: ci-test-placeholder
-
       - name: Coverage summary
         if: always()
         run: |
-          echo "## 🧪 Backend Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "## Backend Coverage" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat coverage/coverage-summary.json 2>/dev/null | \
             node -e "
@@ -116,8 +102,7 @@ jobs:
               console.log('Statements: ' + d.statements.pct + '%');
             " 2>/dev/null || echo "Coverage summary not available"
           echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload coverage
+      - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -125,64 +110,50 @@ jobs:
           path: backend/coverage/
           retention-days: 7
 
-  # ════════════════════════════════════════════════════════════════════════════
-  # JOB 3 — Frontend: TypeScript Type-Check
-  # Note: frontend/package.json "lint" script runs `tsc --noEmit` (type-check),
-  # not ESLint. This catches type errors before tests run.
-  # ════════════════════════════════════════════════════════════════════════════
+  # ── Job 3: Frontend TypeScript Type-Check ───────────────────────────────────
+  # Note: frontend "lint" script runs tsc --noEmit (type-check), not ESLint
   frontend-lint:
-    name: 🔍 Frontend — TypeScript Type-Check
+    name: Frontend TypeScript Type-Check
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-
       - run: npm ci --prefer-offline
       - run: npm run lint
 
-  # ════════════════════════════════════════════════════════════════════════════
-  # JOB 4 — Frontend: Unit Tests + Coverage
-  # ════════════════════════════════════════════════════════════════════════════
+  # ── Job 4: Frontend Unit Tests ───────────────────────────────────────────────
   frontend-test:
-    name: 🧪 Frontend — Karma Unit Tests & Coverage
+    name: Frontend Karma Unit Tests
     runs-on: ubuntu-latest
     needs: frontend-lint
     defaults:
       run:
         working-directory: frontend
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-
       - name: Install Chrome (headless)
         uses: browser-actions/setup-chrome@v1
-
       - run: npm ci --prefer-offline
-
       - name: Run unit tests (headless Chrome)
         run: npm run test:ci
         env:
           CHROME_BIN: /usr/bin/google-chrome
-
       - name: Coverage summary
         if: always()
         run: |
-          echo "## 🧪 Frontend Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "## Frontend Coverage" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat coverage/ai-pulse-frontend/coverage-summary.json 2>/dev/null | \
             node -e "
@@ -194,8 +165,7 @@ jobs:
               console.log('Statements: ' + d.statements.pct + '%');
             " 2>/dev/null || echo "Coverage summary not available"
           echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload coverage
+      - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -203,19 +173,110 @@ jobs:
           path: frontend/coverage/
           retention-days: 7
 
-  # ════════════════════════════════════════════════════════════════════════════
-  # JOB 5 — Gate: All tests must pass
-  # ════════════════════════════════════════════════════════════════════════════
-  all-tests-pass:
-    name: ✅ All Tests Passed
+  # ── Job 5: PR Title Validation (Conventional Commits) ───────────────────────
+  # Only meaningful on pull_request events (skipped on push)
+  pr-title-check:
+    name: PR Title Check (Conventional Commits)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Validate PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            refactor
+            perf
+            style
+            test
+            docs
+            ci
+            chore
+            revert
+          requireScope: false
+          ignoreLabels: |
+            ignore-semantic-pr
+
+  # ── Job 6: Frontend Bundle Size Report ──────────────────────────────────────
+  # Builds the Angular app and posts bundle sizes as a PR comment.
+  # Only runs on pull_request AND only if frontend files actually changed.
+  bundle-size:
+    name: Bundle Size Report
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for frontend changes
+        id: frontend-changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'frontend/src/**'
+              - 'frontend/package*.json'
+              - 'frontend/angular.json'
+
+      - uses: actions/setup-node@v4
+        if: steps.frontend-changes.outputs.frontend == 'true'
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        if: steps.frontend-changes.outputs.frontend == 'true'
+        run: npm ci --prefer-offline
+
+      - name: Build production bundle
+        if: steps.frontend-changes.outputs.frontend == 'true'
+        run: npm run build -- --configuration production
+
+      - name: Post bundle size comment
+        if: steps.frontend-changes.outputs.frontend == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const files = execSync('find frontend/dist -name "*.js" -o -name "*.css" 2>/dev/null | head -20', { encoding: 'utf8' });
+            const lines = files.trim().split('\n').filter(Boolean);
+            let table = '| File | Size |\n|------|------|\n';
+            for (const f of lines) {
+              try {
+                const size = execSync(`du -sh "${f}"`, { encoding: 'utf8' }).split('\t')[0];
+                table += `| \`${f.replace('frontend/dist/', '')}\` | ${size} |\n`;
+              } catch {}
+            }
+            const body = `## Bundle Size Report\n\n${table}\n\n_Commit: \`${{ github.sha }}\`_`;
+            const existing = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            const bot = existing.data.find(c => c.body.includes('Bundle Size Report') && c.user.type === 'Bot');
+            if (bot) {
+              await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: bot.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.payload.pull_request.number, body });
+            }
+
+  # ── Job 7: Gate — all required checks must pass ──────────────────────────────
+  # This is the single status check branch-protection rules should require.
+  # "if: always()" ensures it runs even when upstream jobs fail (so it can report the failure).
+  all-checks-pass:
+    name: All Checks Passed
     runs-on: ubuntu-latest
     if: always()
     needs: [backend-lint, backend-test, frontend-lint, frontend-test]
-
     steps:
-      - name: Check results
+      - name: Check all results
         run: |
-          echo "## CI Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## CI Results" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| backend-lint  | ${{ needs.backend-lint.result }}  |" >> $GITHUB_STEP_SUMMARY
@@ -223,12 +284,12 @@ jobs:
           echo "| frontend-lint | ${{ needs.frontend-lint.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| frontend-test | ${{ needs.frontend-test.result }} |" >> $GITHUB_STEP_SUMMARY
 
-          if [[ "${{ needs.backend-lint.result }}"   != "success" ||
-                "${{ needs.backend-test.result }}"   != "success" ||
-                "${{ needs.frontend-lint.result }}"  != "success" ||
-                "${{ needs.frontend-test.result }}"  != "success" ]]; then
-            echo "❌ One or more test jobs failed." | tee -a $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.backend-lint.result }}"  != "success" ||
+                "${{ needs.backend-test.result }}"  != "success" ||
+                "${{ needs.frontend-lint.result }}" != "success" ||
+                "${{ needs.frontend-test.result }}" != "success" ]]; then
+            echo "One or more required checks failed." | tee -a $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
-          echo "✅ All tests passed." | tee -a $GITHUB_STEP_SUMMARY
+          echo "All checks passed." | tee -a $GITHUB_STEP_SUMMARY
