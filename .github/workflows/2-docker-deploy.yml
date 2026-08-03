@@ -197,7 +197,13 @@ jobs:
               docker compose -f docker-compose.yml \
               up -d --remove-orphans --no-build --force-recreate || {
                 echo "❌ Stack failed to start! Dumping logs for debugging:"
+                echo "--- DOCKER PS ---"
+                docker ps -a
+                echo "--- BACKEND INSPECT ---"
+                docker inspect ai_pulse_backend || true
+                echo "--- BACKEND LOGS ---"
                 docker logs ai_pulse_backend 2>&1 || true
+                echo "--- DB LOGS ---"
                 docker logs ai_pulse_db 2>&1 | tail -20 || true
                 exit 1
               }

@@ -1,5 +1,7 @@
 'use strict';
 
+console.log('====== SERVER.JS IS STARTING ======');
+
 require('dotenv').config();
 
 const app               = require('./app');
