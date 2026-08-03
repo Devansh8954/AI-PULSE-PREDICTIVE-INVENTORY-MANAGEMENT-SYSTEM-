@@ -158,7 +158,11 @@ jobs:
             echo "🚀 Starting fresh stack..."
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
               docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-              up -d --remove-orphans --no-build --force-recreate
+              up -d --remove-orphans --no-build --force-recreate || { 
+                echo "❌ Stack failed to start! Dumping backend logs for debugging:"
+                docker logs ai_pulse_backend
+                exit 1
+              }
 
             echo "🧹 Pruning dangling images..."
             docker image prune -f
