@@ -150,17 +150,22 @@ jobs:
               printf 'BCRYPT_SALT_ROUNDS=12\n'
             } > "$REPO_DIR/backend/.env"
 
-            echo "⏹️ Stopping existing stack..."
+            echo "⏹️ Stopping existing stack (from inside repo dir)..."
+            cd "$REPO_DIR"
+            DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
+            DB_NAME=ai_pulse_db \
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
               docker compose -f docker-compose.yml -f docker-compose.prod.yml \
               down --remove-orphans || true
 
             echo "🚀 Starting fresh stack..."
+            DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
+            DB_NAME=ai_pulse_db \
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
               docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-              up -d --remove-orphans --no-build --force-recreate || { 
+              up -d --remove-orphans --no-build --force-recreate || {
                 echo "❌ Stack failed to start! Dumping backend logs for debugging:"
-                docker logs ai_pulse_backend
+                docker logs ai_pulse_backend 2>&1 || true
                 exit 1
               }
 
@@ -168,7 +173,7 @@ jobs:
             docker image prune -f
 
             echo "✅ Health check..."
-            sleep 15
+            sleep 25
             curl -sf http://localhost:3000/health && echo "Backend healthy ✅" || echo "⚠️ Backend health check failed — check docker logs"
 
       - name: Deployment summary
