@@ -175,6 +175,8 @@ jobs:
               printf 'DB_NAME=ai_pulse_db\n'
               printf 'DB_USER=root\n'
               printf 'DB_PASSWORD=%s\n' '${{ secrets.DB_PASSWORD }}'
+              printf 'MYSQL_DATABASE=ai_pulse_db\n'
+              printf 'MYSQL_ROOT_PASSWORD=%s\n' '${{ secrets.DB_PASSWORD }}'
               printf 'JWT_SECRET=%s\n' '${{ secrets.JWT_SECRET }}'
               printf 'JWT_EXPIRES_IN=24h\n'
               printf 'CORS_ORIGIN=http://localhost:4200,http://localhost,https://localhost,http://54.242.119.254,https://54.242.119.254,https://ai-pulse-inventory.duckdns.org\n'
@@ -186,15 +188,11 @@ jobs:
 
             echo "⏹️ Stopping existing stack..."
             cd "$REPO_DIR"
-            DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
-            DB_NAME=ai_pulse_db \
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
               docker compose -f docker-compose.yml \
               down --remove-orphans || true
 
             echo "🚀 Starting fresh stack with new images..."
-            DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
-            DB_NAME=ai_pulse_db \
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
               docker compose -f docker-compose.yml \
               up -d --remove-orphans --no-build --force-recreate || {

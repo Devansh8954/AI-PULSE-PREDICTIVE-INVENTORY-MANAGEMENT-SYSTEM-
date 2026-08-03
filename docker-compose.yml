@@ -21,11 +21,8 @@ services:
     container_name: ai_pulse_db
     restart: unless-stopped
 
-    environment:
-      # Using root throughout so DB_USER=root in .env connects without a permissions error.
-      # If you later add a dedicated MySQL user, update DB_USER in .env to match.
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE:      ${DB_NAME:-ai_pulse_db}
+    env_file:
+      - ./backend/.env
 
     # No ports exposed — DB is internal only. Access via Docker network.
     # For local dev with a DB GUI, use docker-compose.override.yml to add 3306:3306.
@@ -76,10 +73,6 @@ services:
     # ports:
     #   - "3000:3000"
 
-    volumes:
-      # Named volume for persistent logs (optional — remove if you use stdout only)
-      - backend_logs:/app/logs
-
     depends_on:
       db:
         condition: service_healthy
@@ -123,8 +116,6 @@ services:
 # ── Named Volumes ─────────────────────────────────────────────────────────────
 volumes:
   db_data:
-    driver: local
-  backend_logs:
     driver: local
   letsencrypt_certs:
     driver: local   # Cert persists here — survives redeploys, prevents rate-limit exhaustion
