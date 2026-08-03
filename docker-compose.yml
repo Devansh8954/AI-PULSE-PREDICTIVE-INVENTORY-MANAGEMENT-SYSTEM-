@@ -1,5 +1,5 @@
-﻿# =============================================================================
-# AI-Pulse — docker-compose.yml
+# =============================================================================
+# AI-Pulse — docker-compose.yml  [deploy: 2026-08-03]
 #
 # Services:
 #   db       → MySQL 8.4 (persisted volume, health-checked)
