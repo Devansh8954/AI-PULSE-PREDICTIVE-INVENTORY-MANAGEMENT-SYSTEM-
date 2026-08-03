@@ -1,7 +1,5 @@
 'use strict';
 
-console.log('====== SERVER.JS IS STARTING ======');
-
 require('dotenv').config();
 
 const app               = require('./app');
@@ -20,7 +18,7 @@ const startServer = async () => {
       logger.info(`📘  Environment          → ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (err) {
-    console.error('❌  Failed to connect to database. Server will not start.', err);
+    logger.error('❌  Failed to connect to database. Server will not start.', err);
     process.exit(1); // eslint-disable-line no-process-exit
   }
 };

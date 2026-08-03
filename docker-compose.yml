@@ -1,16 +1,15 @@
 # =============================================================================
-# AI-Pulse — docker-compose.yml  (single file for dev + production)
+# AI-Pulse — docker-compose.yml
 #
 # Services:
 #   db       → MySQL 8.4 (persisted volume, health-checked)
 #   backend  → Node.js Express API (waits for db to be healthy)
 #   frontend → Angular app served by Nginx (proxies /api → backend)
 #
-# Local dev:
-#   docker compose up --build -d
-#
-# Production (images from Docker Hub):
-#   DOCKERHUB_USERNAME=myuser docker compose up -d --no-build
+# Quick start:
+#   1. cp backend/.env.example backend/.env   # fill in secrets
+#   2. docker compose up --build -d
+#   3. open http://localhost:4200
 # =============================================================================
 
 services:
@@ -21,8 +20,11 @@ services:
     container_name: ai_pulse_db
     restart: unless-stopped
 
-    env_file:
-      - ./backend/.env
+    environment:
+      # Using root throughout so DB_USER=root in .env connects without a permissions error.
+      # If you later add a dedicated MySQL user, update DB_USER in .env to match.
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE:      ${DB_NAME:-ai_pulse_db}
 
     # No ports exposed — DB is internal only. Access via Docker network.
     # For local dev with a DB GUI, use docker-compose.override.yml to add 3306:3306.
@@ -47,9 +49,6 @@ services:
 
   # ── Node.js Backend API ──────────────────────────────────────────────────────
   backend:
-    # In production DOCKERHUB_USERNAME is set → pulls pre-built image from Docker Hub.
-    # Locally (no DOCKERHUB_USERNAME) it falls back to building from source.
-    image: ${DOCKERHUB_USERNAME:-local}/ai-pulse-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -67,11 +66,13 @@ services:
       DB_PORT: 3306
       NODE_ENV: ${NODE_ENV:-production}
 
-    # Port 3000 is NOT published to the host in production.
-    # All traffic goes through Nginx (ports 80/443) which proxies /api/* → backend:3000.
-    # For local dev, use docker-compose.override.yml to add "3000:3000".
-    # ports:
-    #   - "3000:3000"
+    ports:
+      # Expose backend to host for direct API testing (Postman, curl)
+      - "3000:3000"
+
+    volumes:
+      # Named volume for persistent logs (optional — remove if you use stdout only)
+      - backend_logs:/app/logs
 
     depends_on:
       db:
@@ -90,7 +91,6 @@ services:
 
   # ── Angular Frontend (Nginx) ─────────────────────────────────────────────────
   frontend:
-    image: ${DOCKERHUB_USERNAME:-local}/ai-pulse-frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -100,11 +100,6 @@ services:
     ports:
       - "80:80"   # Serve on standard HTTP port (redirects to HTTPS)
       - "443:443" # Serve on standard HTTPS port
-
-    volumes:
-      # Persist Let's Encrypt certs across container restarts and CI/CD redeploys.
-      # This prevents hitting the rate limit (5 certs/week) on every redeploy.
-      - letsencrypt_certs:/etc/letsencrypt
 
     depends_on:
       backend:
@@ -117,8 +112,8 @@ services:
 volumes:
   db_data:
     driver: local
-  letsencrypt_certs:
-    driver: local   # Cert persists here — survives redeploys, prevents rate-limit exhaustion
+  backend_logs:
+    driver: local
 
 # ── Networks ──────────────────────────────────────────────────────────────────
 networks:

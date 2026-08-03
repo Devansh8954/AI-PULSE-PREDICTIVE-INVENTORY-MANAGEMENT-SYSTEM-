@@ -63,30 +63,23 @@ coverage/
 *.p12
 
 # ── Docker ────────────────────────────────────────────────────────────────────
-# (Removed dev overrides and local volumes to keep repo ultra-clean)
-
-# ── Database dumps / backups (never commit raw SQL exports) ───────────────────
-backup.sql
-backup*.sql
-*.dump
-dump.sql
-
+# Local override file for docker-compose (put your dev overrides here)
+docker-compose.override.yml
+# Docker volumes synced locally (if you ever use bind-mounts for db_data)
+.docker/
 
 INTERVIEW.md
 interview.md
 *interview*
 *Interview*
 *INTERVIEW*
-
-# Private docs — keep out of git (public docs in docs/ ARE committed)
-docs/INTERVIEW_QA.md
-docs/PRODUCTION.md
-docs/aws_management_guide.md.resolved
-docs/INTERVIEW.md
-docs/EC2_FRESH_DEPLOY.md
-
+docs/
+**/docs/
 materials/
 material/
 *.private
 private/
+docs/INTERVIEW_QA.md
+docs/PRODUCTION.md
+docs/aws_management_guide.md.resolved
 

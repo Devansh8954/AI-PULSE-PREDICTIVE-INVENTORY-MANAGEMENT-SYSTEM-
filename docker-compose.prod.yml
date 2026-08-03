@@ -1,0 +1,24 @@
+# =============================================================================
+# AI-Pulse — docker-compose.prod.yml
+#
+# Production mode: pulls pre-built images from Docker Hub instead of
+# building locally. Use this on a server / VPS / cloud VM.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Or set DOCKERHUB_USERNAME in your environment:
+#   $env:DOCKERHUB_USERNAME="yourusername"   (PowerShell)
+#   export DOCKERHUB_USERNAME="yourusername" (bash/Linux)
+# =============================================================================
+
+services:
+
+  backend:
+    # Pull from Docker Hub instead of building locally
+    image: ${DOCKERHUB_USERNAME}/ai-pulse-backend:latest
+    build: !reset null   # disables the build: key from docker-compose.yml
+
+  frontend:
+    image: ${DOCKERHUB_USERNAME}/ai-pulse-frontend:latest
+    build: !reset null

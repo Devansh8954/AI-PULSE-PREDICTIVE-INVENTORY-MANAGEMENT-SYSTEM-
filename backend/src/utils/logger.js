@@ -17,9 +17,12 @@ const logger = createLogger({
     process.env.NODE_ENV === 'production' ? format.json() : combine(colorize(), logFormat),
   ),
   transports: [
-    new transports.Console({ handleExceptions: true }),
+    new transports.Console(),
     new transports.File({ filename: 'logs/error.log', level: 'error' }),
     new transports.File({ filename: 'logs/combined.log' }),
+  ],
+  exceptionHandlers: [
+    new transports.File({ filename: 'logs/exceptions.log' }),
   ],
 });
 
