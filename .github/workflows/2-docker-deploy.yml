@@ -27,15 +27,6 @@ on:
   # Docker/infra config changes don't trigger CI tests, so deploy directly.
   push:
     branches: [main, temp-fix-env]
-    paths:
-      - 'backend/Dockerfile'
-      - 'backend/.dockerignore'
-      - 'frontend/Dockerfile'
-      - 'frontend/.dockerignore'
-      - 'frontend/nginx.conf'
-      - 'frontend/entrypoint.sh'
-      - 'docker-compose*.yml'
-      - 'database/**'
 
   # ── Manual emergency deploy ───────────────────────────────────────────────────
   workflow_dispatch:
