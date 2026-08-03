@@ -133,22 +133,22 @@ jobs:
             fi
 
             echo "🔑 Writing backend .env from GitHub Secrets..."
-            cat > "$REPO_DIR/backend/.env" << 'ENVEOF'
-PORT=3000
-NODE_ENV=production
-DB_HOST=db
-DB_PORT=3306
-DB_NAME=ai_pulse_db
-DB_USER=root
-DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-JWT_SECRET=${{ secrets.JWT_SECRET }}
-JWT_EXPIRES_IN=24h
-CORS_ORIGIN=http://localhost:4200,http://localhost,https://localhost,http://54.242.119.254,https://54.242.119.254,https://ai-pulse-inventory.duckdns.org
-GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=500
-BCRYPT_SALT_ROUNDS=12
-ENVEOF
+            {
+              printf 'PORT=3000\n'
+              printf 'NODE_ENV=production\n'
+              printf 'DB_HOST=db\n'
+              printf 'DB_PORT=3306\n'
+              printf 'DB_NAME=ai_pulse_db\n'
+              printf 'DB_USER=root\n'
+              printf 'DB_PASSWORD=%s\n' '${{ secrets.DB_PASSWORD }}'
+              printf 'JWT_SECRET=%s\n' '${{ secrets.JWT_SECRET }}'
+              printf 'JWT_EXPIRES_IN=24h\n'
+              printf 'CORS_ORIGIN=http://localhost:4200,http://localhost,https://localhost,http://54.242.119.254,https://54.242.119.254,https://ai-pulse-inventory.duckdns.org\n'
+              printf 'GEMINI_API_KEY=%s\n' '${{ secrets.GEMINI_API_KEY }}'
+              printf 'RATE_LIMIT_WINDOW_MS=900000\n'
+              printf 'RATE_LIMIT_MAX=500\n'
+              printf 'BCRYPT_SALT_ROUNDS=12\n'
+            } > "$REPO_DIR/backend/.env"
 
             echo "⏹️ Stopping existing stack..."
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
