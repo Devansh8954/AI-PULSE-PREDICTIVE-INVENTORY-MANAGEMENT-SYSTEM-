@@ -1,0 +1,24 @@
+name: 🐛 Debug EC2
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Debug
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -x
+            docker ps -a
+            docker inspect ai_pulse_backend || true
+            docker logs ai_pulse_backend || true
+            
+            # Let's see if we can start it manually
+            cd ~/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-
+            docker run --rm --env-file backend/.env ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend:latest
