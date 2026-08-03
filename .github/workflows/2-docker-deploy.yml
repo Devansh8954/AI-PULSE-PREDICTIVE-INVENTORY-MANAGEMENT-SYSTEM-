@@ -115,25 +115,39 @@ jobs:
           script: |
             set -e
 
+            REPO_DIR=~/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-
+
             echo "📦 Pulling latest images..."
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend:latest
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-frontend:latest
 
-            echo "🔄 Restarting stack..."
-            cd ~/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-
-            git fetch origin main
-            git reset --hard origin/main
+            echo "🔄 Syncing repo..."
+            if [ -d "$REPO_DIR/.git" ]; then
+              cd "$REPO_DIR"
+              git fetch origin main || true
+              git reset --hard origin/main || true
+            else
+              echo "Repo missing — cloning fresh..."
+              git clone https://github.com/Devansh8954/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-.git "$REPO_DIR"
+              cd "$REPO_DIR"
+            fi
 
+            echo "⏹️ Stopping existing stack..."
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
               docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-              up -d --remove-orphans --no-build
+              down --remove-orphans || true
+
+            echo "🚀 Starting fresh stack..."
+            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
+              docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+              up -d --remove-orphans --no-build --force-recreate
 
             echo "🧹 Pruning dangling images..."
             docker image prune -f
 
             echo "✅ Health check..."
-            sleep 10
-            curl -sf http://localhost:3000/health && echo "Backend healthy ✅" || echo "⚠️ Backend health check failed"
+            sleep 15
+            curl -sf http://localhost:3000/health && echo "Backend healthy ✅" || echo "⚠️ Backend health check failed — check docker logs"
 
       - name: Deployment summary
         run: |
