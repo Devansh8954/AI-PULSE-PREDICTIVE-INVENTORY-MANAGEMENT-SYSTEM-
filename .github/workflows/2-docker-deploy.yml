@@ -138,36 +138,40 @@ jobs:
       url: https://ai-pulse-inventory.duckdns.org
 
     steps:
-      - name: Deploy to EC2 via SSH
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          BACKEND_ENV: ${{ secrets.BACKEND_ENV }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           timeout: 60s
           command_timeout: 10m
+          envs: BACKEND_ENV
           script: |
+            # Exit immediately if a command exits with a non-zero status
             set -e
 
-            REPO_DIR=~/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-
-
+            REPO_DIR="/home/${{ secrets.EC2_USERNAME }}/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-"
+            
             echo "📦 Pulling latest images from Docker Hub..."
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend:latest
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-frontend:latest
 
-            echo "🔄 Syncing repo to latest main..."
-            if [ -d "$REPO_DIR/.git" ]; then
-              cd "$REPO_DIR"
-              git fetch origin main || true
-              git reset --hard origin/main || true
-            else
-              echo "Repo missing — cloning fresh..."
+            if [ ! -d "$REPO_DIR" ]; then
+              echo "🔄 Cloning repo for the first time..."
               git clone https://github.com/Devansh8954/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-.git "$REPO_DIR"
               cd "$REPO_DIR"
+            else
+              echo "🔄 Syncing repo to latest main..."
+              cd "$REPO_DIR"
+              git fetch origin main
+              git reset --hard origin/main
             fi
 
             echo "🔑 Writing backend .env from GitHub Secrets..."
-            printf '%s\n' '${{ secrets.BACKEND_ENV }}' > "$REPO_DIR/backend/.env"
+            printf '%s\n' "$BACKEND_ENV" > "$REPO_DIR/backend/.env"
 
             echo "⏹️ Stopping existing stack..."
             cd "$REPO_DIR"
