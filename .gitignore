@@ -68,6 +68,12 @@ docker-compose.override.yml
 # Docker volumes synced locally (if you ever use bind-mounts for db_data)
 .docker/
 
+# ── Database dumps / backups (never commit raw SQL exports) ───────────────────
+backup.sql
+backup*.sql
+*.dump
+dump.sql
+
 
 INTERVIEW.md
 interview.md

@@ -66,9 +66,11 @@ services:
       DB_PORT: 3306
       NODE_ENV: ${NODE_ENV:-production}
 
-    ports:
-      # Expose backend to host for direct API testing (Postman, curl)
-      - "3000:3000"
+    # Port 3000 is NOT published to the host in production.
+    # All traffic goes through Nginx (ports 80/443) which proxies /api/* → backend:3000.
+    # For local dev, use docker-compose.override.yml to add "3000:3000".
+    # ports:
+    #   - "3000:3000"
 
     volumes:
       # Named volume for persistent logs (optional — remove if you use stdout only)
