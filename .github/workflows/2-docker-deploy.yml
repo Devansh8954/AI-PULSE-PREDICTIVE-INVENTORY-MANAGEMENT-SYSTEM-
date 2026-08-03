@@ -189,14 +189,14 @@ jobs:
             DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
             DB_NAME=ai_pulse_db \
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
-              docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+              docker compose -f docker-compose.yml \
               down --remove-orphans || true
 
             echo "🚀 Starting fresh stack with new images..."
             DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
             DB_NAME=ai_pulse_db \
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
-              docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+              docker compose -f docker-compose.yml \
               up -d --remove-orphans --no-build --force-recreate || {
                 echo "❌ Stack failed to start! Dumping logs for debugging:"
                 docker logs ai_pulse_backend 2>&1 || true

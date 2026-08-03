@@ -1,15 +1,16 @@
 # =============================================================================
-# AI-Pulse — docker-compose.yml
+# AI-Pulse — docker-compose.yml  (single file for dev + production)
 #
 # Services:
 #   db       → MySQL 8.4 (persisted volume, health-checked)
 #   backend  → Node.js Express API (waits for db to be healthy)
 #   frontend → Angular app served by Nginx (proxies /api → backend)
 #
-# Quick start:
-#   1. cp backend/.env.example backend/.env   # fill in secrets
-#   2. docker compose up --build -d
-#   3. open http://localhost:4200
+# Local dev:
+#   docker compose up --build -d
+#
+# Production (images from Docker Hub):
+#   DOCKERHUB_USERNAME=myuser docker compose up -d --no-build
 # =============================================================================
 
 services:
@@ -49,6 +50,9 @@ services:
 
   # ── Node.js Backend API ──────────────────────────────────────────────────────
   backend:
+    # In production DOCKERHUB_USERNAME is set → pulls pre-built image from Docker Hub.
+    # Locally (no DOCKERHUB_USERNAME) it falls back to building from source.
+    image: ${DOCKERHUB_USERNAME:-local}/ai-pulse-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -93,6 +97,7 @@ services:
 
   # ── Angular Frontend (Nginx) ─────────────────────────────────────────────────
   frontend:
+    image: ${DOCKERHUB_USERNAME:-local}/ai-pulse-frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
