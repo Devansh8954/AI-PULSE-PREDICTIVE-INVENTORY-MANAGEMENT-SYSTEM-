@@ -101,6 +101,11 @@ services:
       - "80:80"   # Serve on standard HTTP port (redirects to HTTPS)
       - "443:443" # Serve on standard HTTPS port
 
+    volumes:
+      # Persist Let's Encrypt certs across container restarts and CI/CD redeploys.
+      # This prevents hitting the rate limit (5 certs/week) on every redeploy.
+      - letsencrypt_certs:/etc/letsencrypt
+
     depends_on:
       backend:
         condition: service_healthy
@@ -114,6 +119,8 @@ volumes:
     driver: local
   backend_logs:
     driver: local
+  letsencrypt_certs:
+    driver: local   # Cert persists here — survives redeploys, prevents rate-limit exhaustion
 
 # ── Networks ──────────────────────────────────────────────────────────────────
 networks:
