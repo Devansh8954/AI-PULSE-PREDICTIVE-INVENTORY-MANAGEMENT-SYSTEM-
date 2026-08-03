@@ -140,15 +140,12 @@ jobs:
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
-        env:
-          BACKEND_ENV: ${{ secrets.BACKEND_ENV }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           timeout: 60s
           command_timeout: 10m
-          envs: BACKEND_ENV
           script: |
             # Exit immediately if a command exits with a non-zero status
             set -e
@@ -170,8 +167,8 @@ jobs:
               git reset --hard origin/main
             fi
 
-            echo "🔑 Writing backend .env from GitHub Secrets..."
-            printf '%s\n' "$BACKEND_ENV" > "$REPO_DIR/backend/.env"
+            echo "🔑 Notice: backend/.env is managed manually on the EC2 server."
+            # We no longer overwrite backend/.env from GitHub Secrets because it was breaking the deployment.
 
             echo "⏹️ Stopping existing stack..."
             cd "$REPO_DIR"
