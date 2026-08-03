@@ -1,30 +1,43 @@
 # =============================================================================
 # 2-docker-deploy.yml
 # PURPOSE : Build Docker images → Push to Docker Hub → Deploy to AWS EC2
-# TRIGGERS: push to main ONLY (after tests pass via 1-ci-tests.yml)
-#           workflow_dispatch for manual emergency deploys
-# SKIPS   : docs, markdown, config-only changes (same paths as ci-tests)
+#
+# TRIGGER LOGIC (production-safe):
+#   1. workflow_run  → fires ONLY after "CI — Lint & Tests" succeeds on main.
+#                      This gates ALL code-change deploys behind passing tests.
+#   2. push (infra)  → fires directly for Docker/infra-only changes that don't
+#                      affect application code (Dockerfile, nginx.conf, etc.)
+#                      These don't need a test gate.
+#   3. workflow_dispatch → manual emergency deploy, always allowed.
+#
 # DOES NOT: run any tests (tests already ran in 1-ci-tests.yml)
 # =============================================================================
 
 name: 🐳 Docker Build & Deploy
 
 on:
+  # ── Gated code-change deploy ─────────────────────────────────────────────────
+  # Only fires when CI tests PASS on main. Broken code is never deployed.
+  workflow_run:
+    workflows: ["🧪 CI — Lint & Tests"]
+    types: [completed]
+    branches: [main]
+
+  # ── Direct infra-change deploy ───────────────────────────────────────────────
+  # Docker/infra config changes don't trigger CI tests, so deploy directly.
   push:
     branches: [main]
     paths:
-      # Only rebuild + redeploy when actual application code or Docker config changes
-      - 'backend/src/**'
-      - 'backend/package*.json'
       - 'backend/Dockerfile'
       - 'backend/.dockerignore'
-      - 'frontend/src/**'
-      - 'frontend/package*.json'
       - 'frontend/Dockerfile'
       - 'frontend/.dockerignore'
-      - 'frontend/angular.json'
+      - 'frontend/nginx.conf'
+      - 'frontend/entrypoint.sh'
       - 'docker-compose*.yml'
-      - 'nginx/**'
+      - 'database/**'
+
+  # ── Manual emergency deploy ───────────────────────────────────────────────────
   workflow_dispatch:
     inputs:
       reason:
@@ -32,10 +45,10 @@ on:
         required: false
         default: 'Manual deploy'
 
-# Cancel older deploy runs to avoid race conditions on EC2
+# Never cancel an in-progress deploy — risk of leaving EC2 in a broken state.
 concurrency:
   group: docker-deploy-main
-  cancel-in-progress: false  # Never cancel an in-progress deploy (risk of broken state)
+  cancel-in-progress: false
 
 jobs:
   # ════════════════════════════════════════════════════════════════════════════
@@ -45,9 +58,30 @@ jobs:
     name: 🐳 Build & Push Images
     runs-on: ubuntu-latest
 
+    # GATE: If triggered by workflow_run, only proceed if CI tests PASSED.
+    # Direct push (infra changes) and manual dispatch always proceed.
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+
     steps:
+      # Checkout the exact commit that triggered the deploy.
+      # For workflow_run, use the SHA that passed CI tests, not the runner SHA.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      # Resolve the correct commit SHA for image tagging
+      - name: Resolve commit SHA
+        id: sha
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -66,7 +100,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend:${{ steps.sha.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -78,7 +112,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-frontend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-frontend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-frontend:${{ steps.sha.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -87,8 +121,8 @@ jobs:
           echo "## 🐳 Docker Images Pushed" >> $GITHUB_STEP_SUMMARY
           echo "| Image | Tags |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| ai-pulse-backend  | \`latest\`, \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| ai-pulse-frontend | \`latest\`, \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| ai-pulse-backend  | \`latest\`, \`${{ steps.sha.outputs.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| ai-pulse-frontend | \`latest\`, \`${{ steps.sha.outputs.sha }}\` |" >> $GITHUB_STEP_SUMMARY
 
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 2 — Deploy to AWS EC2
@@ -104,8 +138,8 @@ jobs:
       url: https://ai-pulse-inventory.duckdns.org
 
     steps:
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
@@ -113,34 +147,73 @@ jobs:
           timeout: 60s
           command_timeout: 10m
           script: |
+            # Exit immediately if a command exits with a non-zero status
             set -e
 
-            echo "📦 Pulling latest images..."
+            REPO_DIR="/home/${{ secrets.EC2_USERNAME }}/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-"
+            
+            echo "📦 Pulling latest images from Docker Hub..."
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend:latest
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-frontend:latest
 
-            echo "🔄 Restarting stack..."
-            cd ~/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-
-            git pull origin main
+            if [ ! -d "$REPO_DIR" ]; then
+              echo "🔄 Cloning repo for the first time..."
+              git clone https://github.com/Devansh8954/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-.git "$REPO_DIR"
+              cd "$REPO_DIR"
+            else
+              echo "🔄 Syncing repo to latest main..."
+              cd "$REPO_DIR"
+              git fetch origin main
+              git reset --hard origin/main
+            fi
 
+            echo "🔑 Notice: backend/.env is managed manually on the EC2 server."
+            # We no longer overwrite backend/.env from GitHub Secrets because it was breaking the deployment.
+
+            echo "⏹️ Stopping existing stack..."
+            cd "$REPO_DIR"
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
-              docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-              up -d --remove-orphans --no-build
+              docker compose -f docker-compose.yml \
+              down --remove-orphans || true
+
+            echo "🚀 Starting fresh stack with new images..."
+            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
+              docker compose -f docker-compose.yml \
+              up -d --remove-orphans --no-build --force-recreate || {
+                echo "❌ Stack failed to start! Dumping logs for debugging:"
+                echo "--- DOCKER PS ---"
+                docker ps -a
+                echo "--- BACKEND INSPECT ---"
+                docker inspect ai_pulse_backend || true
+                echo "--- BACKEND LOGS ---"
+                docker logs ai_pulse_backend 2>&1 || true
+                echo "--- DB LOGS ---"
+                docker logs ai_pulse_db 2>&1 | tail -20 || true
+                exit 1
+              }
 
             echo "🧹 Pruning dangling images..."
             docker image prune -f
 
-            echo "✅ Health check..."
-            sleep 10
-            curl -sf http://localhost:3000/health && echo "Backend healthy ✅" || echo "⚠️ Backend health check failed"
+            echo "✅ Health check (waiting 25s for containers to stabilise)..."
+            sleep 25
+            curl -sf http://localhost:3000/health && echo "✅ Backend healthy!" || {
+              echo "⚠️ Health check failed — dumping backend logs:"
+              docker logs ai_pulse_backend 2>&1 | tail -30 || true
+            }
+
+            echo "📋 Container status:"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
       - name: Deployment summary
         run: |
+          SHA="${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}"
           echo "## 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${SHA:0:7}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Actor  | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Reason | ${{ github.event.inputs.reason || 'Push to main' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trigger | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Reason | ${{ github.event.inputs.reason || 'Automated deploy' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Live URL | https://ai-pulse-inventory.duckdns.org |" >> $GITHUB_STEP_SUMMARY
