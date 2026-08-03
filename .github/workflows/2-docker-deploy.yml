@@ -132,6 +132,9 @@ jobs:
               cd "$REPO_DIR"
             fi
 
+            echo "🔑 Writing backend .env from GitHub Secrets..."
+            printf '%s' '${{ secrets.BACKEND_ENV }}' > "$REPO_DIR/backend/.env"
+
             echo "⏹️ Stopping existing stack..."
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
               docker compose -f docker-compose.yml -f docker-compose.prod.yml \
