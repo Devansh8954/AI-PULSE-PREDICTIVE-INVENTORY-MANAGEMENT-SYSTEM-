@@ -119,3 +119,4 @@ volumes:
 networks:
   ai_pulse_net:
     driver: bridge
+
