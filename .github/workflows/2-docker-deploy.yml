@@ -26,7 +26,7 @@ on:
   # ── Direct infra-change deploy ───────────────────────────────────────────────
   # Docker/infra config changes don't trigger CI tests, so deploy directly.
   push:
-    branches: [main]
+    branches: [main, temp-fix-env]
     paths:
       - 'backend/Dockerfile'
       - 'backend/.dockerignore'
@@ -167,8 +167,23 @@ jobs:
               git reset --hard origin/main
             fi
 
-            echo "🔑 Notice: backend/.env is managed manually on the EC2 server."
-            # We no longer overwrite backend/.env from GitHub Secrets because it was breaking the deployment.
+            echo "🔑 Notice: Temporarily injecting backend/.env to recover server."
+            cat << 'EOF' > "$REPO_DIR/backend/.env"
+PORT=3000
+NODE_ENV=development
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=ai_pulse_db
+DB_USER=root
+DB_PASSWORD=devansh@123
+JWT_SECRET=46a9d97f020b38aa4d1d348fc77f8a46c8b31467f80dd64d33a8399b99d97977ef92baaa33445804bb168cb22f2e48d8f394594e970ffdeae1256f10c3fa59be
+JWT_EXPIRES_IN=24h
+CORS_ORIGIN=http://localhost:4200,http://localhost,https://localhost,http://54.242.119.254,https://54.242.119.254,https://ai-pulse-inventory.duckdns.org
+GEMINI_API_KEY=
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=100
+BCRYPT_SALT_ROUNDS=12
+EOF
 
             echo "⏹️ Stopping existing stack..."
             cd "$REPO_DIR"
