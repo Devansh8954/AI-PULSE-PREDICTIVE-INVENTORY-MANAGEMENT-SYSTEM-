@@ -101,6 +101,10 @@ services:
       - "80:80"   # Serve on standard HTTP port (redirects to HTTPS)
       - "443:443" # Serve on standard HTTPS port
 
+    volumes:
+      # Persist Let's Encrypt certificates across container restarts to avoid rate limits
+      - certbot_data:/etc/letsencrypt
+
     depends_on:
       backend:
         condition: service_healthy
@@ -113,6 +117,8 @@ volumes:
   db_data:
     driver: local
   backend_logs:
+    driver: local
+  certbot_data:
     driver: local
 
 # ── Networks ──────────────────────────────────────────────────────────────────

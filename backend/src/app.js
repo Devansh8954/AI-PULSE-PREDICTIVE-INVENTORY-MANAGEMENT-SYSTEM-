@@ -14,10 +14,16 @@ const app = express();
 
 app.use(helmet());
 // Support comma-separated list of origins: e.g. "http://localhost:4200,http://localhost"
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:4200')
+const parsedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:4200')
   .split(',')
   .map(o => o.trim())
   .filter(Boolean);
+
+// Automatically allow the https:// version of any http:// origin
+const allowedOrigins = [...new Set([
+  ...parsedOrigins,
+  ...parsedOrigins.map(o => o.startsWith('http://') ? o.replace('http://', 'https://') : o)
+])];
 
 app.use(cors({
   origin: (origin, callback) => {
