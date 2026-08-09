@@ -73,8 +73,6 @@ interview.md
 *interview*
 *Interview*
 *INTERVIEW*
-docs/
-**/docs/
 materials/
 material/
 *.private
@@ -83,3 +81,6 @@ docs/INTERVIEW_QA.md
 docs/PRODUCTION.md
 docs/aws_management_guide.md.resolved
 
+
+docs/
+**/docs/
