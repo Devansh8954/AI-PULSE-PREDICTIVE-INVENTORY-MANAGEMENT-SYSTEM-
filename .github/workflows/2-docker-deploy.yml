@@ -169,41 +169,23 @@ jobs:
               git reset --hard origin/main
             fi
 
-            echo "🔑 Generating backend/.env from GitHub Secrets..."
-            cat > "$REPO_DIR/backend/.env" <<'ENVEOF'
-# Auto-generated from GitHub Secrets during deployment
-# DO NOT EDIT MANUALLY — changes will be overwritten on next deploy
-
-# ── Server ────────────────────────────────────────────────────────────────────
-PORT=3000
-NODE_ENV=production
-
-# ── Database (MySQL) ──────────────────────────────────────────────────────────
-DB_HOST=db
-DB_PORT=3306
-DB_NAME=ai_pulse_db
-DB_USER=root
-DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-
-# ── JWT ───────────────────────────────────────────────────────────────────────
-JWT_SECRET="${{ secrets.JWT_SECRET }}"
-JWT_EXPIRES_IN=24h
-
-# ── CORS ──────────────────────────────────────────────────────────────────────
-# Production HTTPS origin (nginx terminates SSL, proxies to backend:3000)
-CORS_ORIGIN=https://ai-pulse-inventory.duckdns.org
-
-# ── Google Gemini AI ──────────────────────────────────────────────────────────
-GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
-
-# ── Rate Limiter ──────────────────────────────────────────────────────────────
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=500
-
-# ── Bcrypt ────────────────────────────────────────────────────────────────────
-BCRYPT_SALT_ROUNDS=12
-ENVEOF
-            echo "✅ backend/.env generated from secrets"
+            echo "🔑 Validating backend/.env on EC2..."
+            if [ ! -f "$REPO_DIR/backend/.env" ]; then
+              echo "❌ ERROR: backend/.env not found on EC2!"
+              echo "   Create it at $REPO_DIR/backend/.env"
+              exit 1
+            fi
+            echo "✅ backend/.env found"
+            # Check critical vars are set (not empty/placeholder)
+            if ! grep -q "^DB_PASSWORD=" "$REPO_DIR/backend/.env" || grep -q "^DB_PASSWORD=$" "$REPO_DIR/backend/.env"; then
+              echo "❌ ERROR: DB_PASSWORD not set in backend/.env"
+              exit 1
+            fi
+            if ! grep -q "^JWT_SECRET=" "$REPO_DIR/backend/.env" || grep -q "^JWT_SECRET=$" "$REPO_DIR/backend/.env"; then
+              echo "❌ ERROR: JWT_SECRET not set in backend/.env"
+              exit 1
+            fi
+            echo "✅ Critical environment variables validated"
 
             echo "⏹️ Stopping existing stack..."
             cd "$REPO_DIR"
