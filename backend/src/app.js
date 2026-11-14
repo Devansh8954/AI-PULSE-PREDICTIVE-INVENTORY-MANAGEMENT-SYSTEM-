@@ -12,6 +12,13 @@ const rateLimiter  = require('./middlewares/rateLimiter.middleware');
 
 const app = express();
 
+/**
+ * Trust the first proxy (nginx) for X-Forwarded-* headers.
+ * Critical for HTTPS detection, correct client IPs, and secure cookies
+ * when running behind nginx with SSL termination.
+ */
+app.set('trust proxy', 1);
+
 app.use(helmet());
 // Support comma-separated list of origins: e.g. "http://localhost:4200,http://localhost"
 const parsedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:4200')
