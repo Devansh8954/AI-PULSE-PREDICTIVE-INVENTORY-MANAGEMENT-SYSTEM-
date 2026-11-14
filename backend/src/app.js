@@ -29,7 +29,7 @@ const parsedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:4200')
 // Automatically allow the https:// version of any http:// origin
 const allowedOrigins = [...new Set([
   ...parsedOrigins,
-  ...parsedOrigins.map(o => o.startsWith('http://') ? o.replace('http://', 'https://') : o)
+  ...parsedOrigins.map(o => o.startsWith('http://') ? o.replace('http://', 'https://') : o),
 ])];
 
 app.use(cors({
