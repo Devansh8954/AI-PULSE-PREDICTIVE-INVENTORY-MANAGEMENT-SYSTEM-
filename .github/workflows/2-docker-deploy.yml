@@ -153,6 +153,8 @@ jobs:
             REPO_DIR="/home/${{ secrets.EC2_USERNAME }}/AI-PULSE-PREDICTIVE-INVENTORY-MANAGEMENT-SYSTEM-"
             
             echo "📦 Pulling latest images from Docker Hub..."
+            # Login to Docker Hub first to avoid rate limits
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-backend:latest
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ai-pulse-frontend:latest
 
@@ -167,8 +169,41 @@ jobs:
               git reset --hard origin/main
             fi
 
-            echo "🔑 Notice: backend/.env is managed manually on the EC2 server."
-            # We no longer overwrite backend/.env from GitHub Secrets because it was breaking the deployment.
+            echo "🔑 Generating backend/.env from GitHub Secrets..."
+            cat > "$REPO_DIR/backend/.env" <<'ENVEOF'
+# Auto-generated from GitHub Secrets during deployment
+# DO NOT EDIT MANUALLY — changes will be overwritten on next deploy
+
+# ── Server ────────────────────────────────────────────────────────────────────
+PORT=3000
+NODE_ENV=production
+
+# ── Database (MySQL) ──────────────────────────────────────────────────────────
+DB_HOST=db
+DB_PORT=3306
+DB_NAME=ai_pulse_db
+DB_USER=root
+DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+
+# ── JWT ───────────────────────────────────────────────────────────────────────
+JWT_SECRET="${{ secrets.JWT_SECRET }}"
+JWT_EXPIRES_IN=24h
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Production HTTPS origin (nginx terminates SSL, proxies to backend:3000)
+CORS_ORIGIN=https://ai-pulse-inventory.duckdns.org
+
+# ── Google Gemini AI ──────────────────────────────────────────────────────────
+GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
+
+# ── Rate Limiter ──────────────────────────────────────────────────────────────
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=500
+
+# ── Bcrypt ────────────────────────────────────────────────────────────────────
+BCRYPT_SALT_ROUNDS=12
+ENVEOF
+            echo "✅ backend/.env generated from secrets"
 
             echo "⏹️ Stopping existing stack..."
             cd "$REPO_DIR"
@@ -195,12 +230,23 @@ jobs:
             echo "🧹 Pruning dangling images..."
             docker image prune -f
 
-            echo "✅ Health check (waiting 25s for containers to stabilise)..."
-            sleep 25
-            curl -sf http://localhost:3000/health && echo "✅ Backend healthy!" || {
-              echo "⚠️ Health check failed — dumping backend logs:"
-              docker logs ai_pulse_backend 2>&1 | tail -30 || true
-            }
+            echo "✅ Health check (polling up to 90s for backend to be ready)..."
+            # Poll health endpoint with retries instead of fixed sleep
+            for i in {1..18}; do
+              if curl -sf http://localhost:3000/health; then
+                echo "✅ Backend healthy!"
+                break
+              fi
+              if [ $i -eq 18 ]; then
+                echo "❌ Health check failed after 90s — dumping backend logs:"
+                docker logs ai_pulse_backend 2>&1 | tail -50 || true
+                echo "--- DB LOGS ---"
+                docker logs ai_pulse_db 2>&1 | tail -30 || true
+                exit 1
+              fi
+              echo "⏳ Attempt $i/18: Backend not ready yet, waiting 5s..."
+              sleep 5
+            done
 
             echo "📋 Container status:"
             docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
