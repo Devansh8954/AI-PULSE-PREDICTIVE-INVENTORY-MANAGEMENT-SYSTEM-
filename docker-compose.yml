@@ -125,3 +125,21 @@ volumes:
 networks:
   ai_pulse_net:
     driver: bridge
+
+# ── Certbot Renewal Service (runs daily to auto-renew Let's Encrypt certs) ─────
+# Uncomment and run with: docker compose --profile certbot up -d certbot-renew
+# profiles:
+#   certbot:
+#     services:
+#       - certbot-renew
+services:
+  certbot-renew:
+    image: certbot/certbot:latest
+    container_name: ai_pulse_certbot_renew
+    profiles: ["certbot"]
+    volumes:
+      - certbot_data:/etc/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --standalone --quiet; sleep 12h & wait \$\${!}; done'"
+    restart: unless-stopped
+    networks:
+      - ai_pulse_net
